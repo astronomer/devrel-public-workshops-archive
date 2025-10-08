@@ -6,10 +6,10 @@ from cosmos import DbtDag, ProjectConfig, ProfileConfig
 
 jaffle_shop_path = Path("/usr/local/airflow/dbt/jaffle_shop")
 profile_config = ProfileConfig(
-                    profile_name="bq_profile",
-                    target_name="dev",
-                    profiles_yml_filepath="/usr/local/airflow/dbt/jaffle_shop/profiles.yml"
-                )
+    profile_name="bq_profile",
+    target_name="dev",
+    profiles_yml_filepath="/usr/local/airflow/dbt/jaffle_shop/profiles.yml",
+)
 
 simple_dag = DbtDag(
     # dbt/cosmos-specific parameters
@@ -21,4 +21,3 @@ simple_dag = DbtDag(
     catchup=False,
     dag_id="simple_dag",
 )
-
