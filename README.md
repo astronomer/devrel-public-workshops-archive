@@ -147,8 +147,7 @@ yield Metadata(Asset("formatted_newsletter"), {"run_date": run_date})
 5. Now that your ETL pipeline is complete, take a look at the `personalize_newsletter` DAG. This DAG is currently set to run daily, but it will actually fail if the `formatted_newsletter` asset has not been updated. Change the schedule of `personalize_newsletter` so that it actually runs only when the right data is available.
 6. This pipeline will generate a newsletter with motivational quotes and personalized weather information. In the `include/user_data` folder, update `user_100.json` to include your own name and location.
    - Bonus: try adding additional user files in `include/user_data` and see how that changes the pipeline when it runs.
-7. Deploy your changes by clicking `Sync to Test` in the upper right. This will send the changes you made to your two dags to your test Deployment. Note that syncing may take a few minutes.
-8. To ensure your changes were made, use the reparse dag function in the UI for the `personalize_newsletter` dag. Then, run your full pipeline by materializing the `raw_zen_quotes` DAG. This should trigger all downstream assets and tasks to complete.
+7. To ensure your changes were made, use the reparse dag function in the UI for the `personalize_newsletter` dag. Then, run your full pipeline by materializing the `raw_zen_quotes` DAG. This should trigger all downstream assets and tasks to complete.
 
 > [!TIP]
 > The open-meteo weather API is occasionally flaky. If you get a failure in your `get_weather_info` task, let it retry, it will usually resolve. If you added additional users, you may need to implement a pool so you don't hit API rate limits. Ask one of your workshop leaders for help with this.
@@ -170,8 +169,7 @@ approve_personalization = ApprovalOperator(
 ```
 
 3. Make sure to also adjust the task dependencies in the dag, so that this task comes after `create_personalized_newsletter`.
-4. Deploy your changes by clicking `Sync to Test` in the upper right. This will send the changes you made to your two dags to your test Deployment. Note that syncing may take a few minutes.
-5. Run the `personalize_newsletter` dag again, and approve (or reject!) the results of your newsletter personalization by reviewing the `Required Actions` from your HITL operator.
+4. Run the `personalize_newsletter` dag again, and approve (or reject!) the results of your newsletter personalization by reviewing the `Required Actions` from your HITL operator.
 
 ## Exercise 4: Run a Backfill
 
