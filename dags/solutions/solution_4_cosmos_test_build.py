@@ -14,7 +14,7 @@ DBT_PROJECT_DIR = Path(__file__).parent.parent.parent / "dbt/jaffle_shop"
 PROFILE_NAME = "bq_profile"
 TARGET_NAME = "dev"
 PROFILE_YML_FILEPATH = DBT_PROJECT_DIR / "profiles.yml"
-DBT_MANIFEST_PATH = "/usr/local/airflow/include/manifest.json"
+DBT_MANIFEST_PATH = Path(__file__).parent.parent.parent.parent / "/include/manifest.json"
 
 profile_config = ProfileConfig(
     profile_name=PROFILE_NAME,
