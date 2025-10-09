@@ -5,7 +5,7 @@ bq_profile:
       type: bigquery
       method: service-account
       project: airflowintegrations
-      dataset: afs2025_schema_1
+      dataset: afs2025_schema_<update_this_to_your_assigned_schema_number>
       threads: 16 # Must be a value of 1 or greater
       keyfile:  "{{ env_var('BQ_KEYFILE_PATH', '/usr/local/airflow/include/key.json') }}"
       OPTIONAL_CONFIG: VALUE
