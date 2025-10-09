@@ -11,14 +11,12 @@ from cosmos.profiles.bigquery.service_account_file import GoogleCloudServiceAcco
 
 
 DBT_PROJECT_DIR = Path(__file__).parent.parent.parent / "dbt/jaffle_shop"
-DBT_BIN_PATH = "dbt"
-PROFILE_NAME = "bq_profile"
-TARGET_NAME = "dev"
-PROFILE_YML_FILEPATH = DBT_PROJECT_DIR / "profiles.yml"
 
 BIGQUERY_CONN_ID = os.getenv("BIGQUERY_CONN_ID", "bigquery_default")
 
 profile_config = ProfileConfig(
+    profile_name="default",
+    target_name="dev",
     profile_mapping=GoogleCloudServiceAccountFileProfileMapping(
         conn_id=BIGQUERY_CONN_ID
     )

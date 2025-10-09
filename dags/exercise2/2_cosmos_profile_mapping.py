@@ -20,11 +20,11 @@ BIGQUERY_CONN_ID = os.getenv("BIGQUERY_CONN_ID", "bigquery_default")
 
 
 # TODO: use GoogleCloudServiceAccountFileProfileMapping and the connection BIGQUERY_CONN_ID to map an Airlfow connection to a dbt profile
-#profile_config = ProfileConfig(
-#    profile_name="default",
-#    target_name="dev",
-#    profile_mapping=
-#)
+# profile_config = ProfileConfig(
+#     profile_name=PROFILE_NAME,
+#     target_name=TARGET_NAME,
+#     profiles_yml_filepath=PROFILE_YML_FILEPATH,
+# )
 
 #exercise2_cosmos_profile_mapping = DbtDag(
 #    start_date=datetime(2025, 10, 8),

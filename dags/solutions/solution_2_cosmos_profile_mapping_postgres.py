@@ -11,10 +11,6 @@ from cosmos.profiles.postgres.user_pass import PostgresUserPasswordProfileMappin
 
 
 DBT_PROJECT_DIR = Path(__file__).parent.parent.parent / "dbt/jaffle_shop"
-DBT_BIN_PATH = "dbt"
-PROFILE_NAME = "bq_profile"
-TARGET_NAME = "dev"
-PROFILE_YML_FILEPATH = DBT_PROJECT_DIR / "profiles.yml"
 
 BIGQUERY_CONN_ID = os.getenv("BIGQUERY_CONN_ID", "bigquery_default")
 
@@ -28,7 +24,7 @@ profile_config = ProfileConfig(
 )
 
 solution_2_cosmos_profile_mapping_custom = DbtDag(
-    dag_id="solution_2_cosmos_profile_mapping_custom",
+    dag_id="solution_2_cosmos_profile_mapping_postgres",
     start_date=datetime(2025, 10, 8),
     project_config=ProjectConfig(DBT_PROJECT_DIR),
     profile_config=profile_config,
