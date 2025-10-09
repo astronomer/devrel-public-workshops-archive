@@ -27,8 +27,8 @@ render_config = RenderConfig(
     test_behavior=TestBehavior.BUILD,
 )
 
-solution_4_cosmos_select = DbtDag(
-    dag_id="solution_4_cosmos_select",
+solution_4_cosmos_test_build = DbtDag(
+    dag_id="solution_4_cosmos_test_build",
     start_date=datetime(2025, 10, 8),
     project_config=ProjectConfig(
         DBT_PROJECT_DIR,
