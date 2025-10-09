@@ -7,6 +7,5 @@ bq_profile:
       project: airflowintegrations
       dataset: afs2025_schema_1
       threads: 16 # Must be a value of 1 or greater
-      keyfile: /usr/local/airflow/include/key.json
+      keyfile:  "{{ env_var('BQ_KEYFILE_PATH', '/usr/local/airflow/include/key.json') }}"
       OPTIONAL_CONFIG: VALUE
-
