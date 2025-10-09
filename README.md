@@ -60,6 +60,13 @@ pip install -r requirements.txt
 
 ### ✅ Step 3: Export environment variables
 
+
+Download your credential from here:
+https://drive.google.com/drive/folders/1OPCeaQ0x-H2SwP4vARKKnNZfJhHJJQNp
+
+And override the file include/key.json with the content of the file you download
+
+
 Before exporting, replace `<your dataset>` by your dataset and `<absolute path to your keyfile>` by the absolute path to your keyfile.
 ```
 export AIRFLOW__CORE__LOAD_EXAMPLES=False
@@ -76,7 +83,7 @@ export AIRFLOW_CONN_BIGQUERY_DEFAULT='{"conn_type":"google_cloud_platform","extr
 ### ✅ Step 4: Attempt to run a first DAG
 
 ```bash
-airflow dags test 1_bashoperator
+AIRFLOW_HOME=`pwd` airflow dags test 1_bashoperator
 ```
 
 ### ✅ Step 5: Attempt to use Airflow standalone
