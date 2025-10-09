@@ -4,8 +4,8 @@ bq_profile:
     dev:
       type: bigquery
       method: service-account
-      project: astronomer-airflow-providers
-      dataset: test_async1
+      project: airflowintegrations
+      dataset: afs2025_schema_1
       threads: 16 # Must be a value of 1 or greater
       keyfile: /usr/local/airflow/include/key.json
       OPTIONAL_CONFIG: VALUE
