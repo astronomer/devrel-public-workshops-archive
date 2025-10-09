@@ -1,3 +1,21 @@
 FROM astrocrpublic.azurecr.io/runtime:3.1-1
 
+ENV BIGQUERY_CONN_ID="bigquery_default"
+ENV GCP_PROJECT_ID="astronomer-dag-authoring"
+ENV BIGQUERY_DATASET="release_18"
+ENV BIGQUERY_LOCATION="US"
+ENV BIGQUERY_KEY_PATH="/usr/local/airflow/include/key.json"
+
+ENV AIRFLOW_CONN_BIGQUERY_DEFAULT='{
+    "conn_type":"google_cloud_platform",
+    "extra":{
+        "project":"astronomer-dag-authoring",
+        "dataset":"release_18",
+        "key_path":"/usr/local/airflow/include/key.json"
+    }
+}'
+
+# set a connection to the airflow metadata db to use for testing, only works locally
+ENV AIRFLOW_CONN_AIRFLOW_METADATA_DB=postgresql+psycopg2://postgres:postgres@postgres:5432/postgres
+
 ENV AIRFLOW__COSMOS__DBT_DOCS_PROJECTS='{"jaffle-shop":{"dir":"/usr/local/airflow/dbt/jaffle_shop/target","index":"index.html","name":"dbt Docs (jaffle-shop)"}}'
