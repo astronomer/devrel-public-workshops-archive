@@ -13,5 +13,10 @@ ENV AIRFLOW_CONN_AIRFLOW_METADATA_DB=postgresql+psycopg2://postgres:postgres@pos
 
 ENV AIRFLOW__COSMOS__DBT_DOCS_PROJECTS='{"jaffle-shop":{"dir":"/usr/local/airflow/dbt/jaffle_shop/target","index":"index.html","name":"dbt Docs (jaffle-shop)"}}'
 
+RUN pip install astronomer-cosmos==1.11.0a8
+RUN pip install dbt-bigquery
+
+ENV AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT=600
+
 RUN python -m venv dbt_venv && source dbt_venv/bin/activate && \
     pip install --no-cache-dir dbt-postgres==1.8.2 && deactivate
