@@ -8,7 +8,7 @@ from pathlib import Path
 from cosmos import DbtDag, ProjectConfig, ProfileConfig
 
 
-DBT_PROJECT_DIR = Path(__file__).parent.parent.parent / "dbt/jaffle_shop"
+DBT_PROJECT_DIR = Path(__file__).parent.parent / "dbt/jaffle_shop"
 DBT_BIN_PATH = "dbt"
 PROFILE_NAME = "bq_profile"
 TARGET_NAME = "dev"

@@ -5,14 +5,13 @@ from airflow import DAG
 import os
 from datetime import datetime
 from pathlib import Path
-import re
 
 from cosmos import DbtDag, ExecutionConfig,ProjectConfig, ProfileConfig
 from cosmos.constants import ExecutionMode
 from cosmos.profiles.bigquery.service_account_file import GoogleCloudServiceAccountFileProfileMapping
 
 
-DBT_PROJECT_DIR = Path(__file__).parent.parent.parent / "dbt/jaffle_shop"
+DBT_PROJECT_DIR = Path(__file__).parent.parent / "dbt/jaffle_shop"
 DBT_BIN_PATH = "/usr/local/airflow/dbt_venv/bin/dbt"
 BIGQUERY_CONN_ID = os.getenv("BIGQUERY_CONN_ID", "bigquery_default")
 

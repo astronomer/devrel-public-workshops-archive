@@ -3,7 +3,7 @@ from airflow import DAG
 from airflow.providers.standard.operators.bash import BashOperator
 
 
-DBT_PROJECT_DIR = Path(__file__).parent.parent.parent / "dbt/jaffle_shop"
+DBT_PROJECT_DIR = Path(__file__).parent.parent / "dbt/jaffle_shop"
 DBT_BIN_PATH = "dbt"
 PROFILE_NAME = "bq_profile"
 TARGET_NAME = "dev"

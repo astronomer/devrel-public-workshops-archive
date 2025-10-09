@@ -10,7 +10,7 @@ from cosmos import DbtDag, ProjectConfig, ProfileConfig
 from cosmos.profiles.bigquery.service_account_file import GoogleCloudServiceAccountFileProfileMapping
 
 
-DBT_PROJECT_DIR = Path(__file__).parent.parent.parent / "dbt/jaffle_shop"
+DBT_PROJECT_DIR = Path(__file__).parent.parent / "dbt/jaffle_shop"
 
 BIGQUERY_CONN_ID = os.getenv("BIGQUERY_CONN_ID", "bigquery_default")
 
