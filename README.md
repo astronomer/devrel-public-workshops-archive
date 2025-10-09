@@ -92,6 +92,30 @@ airflow dags test 1_bashoperator
 
 ### ✅ Step 5: Attempt to use Airflow standalone
 
+Inside the `dags` folder, create a `.airflowignore` file with this content:
+```
+#1_bashoperator.py
+#1_cosmos_dbtdag.py
+1_cosmos_task_build.py
+1_cosmos_task_multi.py
+1_cosmos_taskgroup.py
+2_cosmos_profile_mapping.py
+3_cosmos_execution_local.py 
+4_cosmos_manifest.py 
+solution_1_cosmos_dbtdag.py
+solution_1_cosmos_task_build.py
+solution_1_cosmos_task_multi.py
+solution_1_cosmos_taskgroup.py
+solution_2_cosmos_profile_mapping_bq.py
+solution_2_cosmos_profile_mapping_postgres.py
+solution_3_cosmos_execution_local.py
+solution_3_cosmos_execution_airflow_async.py
+solution_3_cosmos_execution_virtualenv.py
+solution_3_cosmos_execution_watcher.py
+solution_4_cosmos_manifest.py 
+solution_4_cosmos_select.py
+```
+
 ```bash
 AIRFLOW_HOME=`pwd` airflow standalone
 ```
