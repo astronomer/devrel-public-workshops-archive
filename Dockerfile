@@ -1,9 +1,8 @@
 FROM astrocrpublic.azurecr.io/runtime:3.1-1
 
 ENV BIGQUERY_CONN_ID="bigquery_default"
-ENV GCP_PROJECT_ID="astronomer-dag-authoring"
-ENV BIGQUERY_DATASET="release_18"
-ENV BIGQUERY_LOCATION="US"
+ENV GCP_PROJECT_ID="airflowintegrations"
+ENV BIGQUERY_DATASET="afs2025_schema_60"
 ENV BIGQUERY_KEY_PATH="/usr/local/airflow/include/key.json"
 
 ENV AIRFLOW_CONN_BIGQUERY_DEFAULT='{"conn_type":"google_cloud_platform","extra":{"project":"astronomer-dag-authoring","dataset":"release_18","key_path":"/usr/local/airflow/include/key.json"}}'
