@@ -10,11 +10,11 @@ from cosmos import DbtDag, ProjectConfig, ProfileConfig, RenderConfig
 from cosmos.constants import LoadMode, TestBehavior
 
 
-DBT_PROJECT_DIR = Path(__file__).parent.parent.parent / "dbt/jaffle_shop"
+DBT_PROJECT_DIR = Path(__file__).parent.parent / "dbt/jaffle_shop"
 PROFILE_NAME = "bq_profile"
 TARGET_NAME = "dev"
 PROFILE_YML_FILEPATH = DBT_PROJECT_DIR / "profiles.yml"
-DBT_MANIFEST_PATH = Path(__file__).parent.parent.parent.parent / "/include/manifest.json"
+DBT_MANIFEST_PATH = Path(__file__).parent.parent.parent / "/include/manifest.json"
 
 profile_config = ProfileConfig(
     profile_name=PROFILE_NAME,
