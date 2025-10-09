@@ -23,7 +23,7 @@ profile_config = ProfileConfig(
 
 
 # TODO: Complete the code below with the correct parameters and values
-#with DAG("solution_1_cosmos_task_multi") as dag:
+#with DAG("1_cosmos_task_multi") as dag:
 #    seed = DbtSeedLocalOperator(
 #
 #    )

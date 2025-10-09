@@ -24,7 +24,7 @@ profile_config = ProfileConfig(
 )
 
 with DAG(
-    dag_id="solution_1_cosmos_taskgroup",
+    dag_id="1_cosmos_taskgroup",
     start_date=datetime(2025, 10, 8),
 ) as dag:
 
