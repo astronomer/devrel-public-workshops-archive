@@ -78,6 +78,8 @@ export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
 export BIGQUERY_DATASET=<your dataset>
 export GCP_PROJECT_ID=airflowintegrations
 export AIRFLOW_CONN_BIGQUERY_DEFAULT='{"conn_type":"google_cloud_platform","extra":{"dataset":"<your dataset>>", "project":"airflowintegrations","key_path":"<absolute path to your keyfile>"}}'
+
+export BQ_KEYFILE_PATH=/Users/tati/devrel-public-workshops/include/key.json
 ```
 
 ### ✅ Step 4: Attempt to run a first DAG
