@@ -85,7 +85,9 @@ export BQ_KEYFILE_PATH=/Users/tati/devrel-public-workshops/include/key.json
 ### ✅ Step 4: Attempt to run a first DAG
 
 ```bash
-AIRFLOW_HOME=`pwd` airflow dags test 1_bashoperator
+export AIRFLOW_HOME=`pwd`
+airflow db reset
+airflow dags test 1_bashoperator
 ```
 
 ### ✅ Step 5: Attempt to use Airflow standalone
