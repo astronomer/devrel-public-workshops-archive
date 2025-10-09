@@ -3,4 +3,5 @@
 
 astronomer-cosmos==1.11.0a7
 dbt-bigquery
+dbt-postgres
 apache-airflow-providers-google
