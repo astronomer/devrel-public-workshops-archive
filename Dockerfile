@@ -5,7 +5,7 @@ ENV GCP_PROJECT_ID="airflowintegrations"
 ENV BIGQUERY_DATASET="afs2025_schema_60"
 ENV BIGQUERY_KEY_PATH="/usr/local/airflow/include/key.json"
 
-ENV AIRFLOW_CONN_BIGQUERY_DEFAULT='{"conn_type":"google_cloud_platform","extra":{"project":"astronomer-dag-authoring","dataset":"release_18","key_path":"/usr/local/airflow/include/key.json"}}'
+ENV AIRFLOW_CONN_BIGQUERY_DEFAULT='{"conn_type":"google_cloud_platform","extra":{"project":"airflowintegrations","dataset":"afs2025_schema_60","key_path":"/usr/local/airflow/include/key.json"}}'
 
 # set a connection to the airflow metadata db to use for testing, only works locally
 ENV AIRFLOW_CONN_AIRFLOW_METADATA_DB=postgresql+psycopg2://postgres:postgres@postgres:5432/postgres
@@ -18,4 +18,4 @@ RUN pip install dbt-bigquery
 ENV AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT=600
 
 RUN python -m venv dbt_venv && source dbt_venv/bin/activate && \
-    pip install --no-cache-dir dbt-postgres==1.8.2 && deactivate
+    pip install --no-cache-dir dbt-bigquery dbt-postgres==1.8.2 && deactivate

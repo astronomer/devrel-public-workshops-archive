@@ -36,30 +36,9 @@ By the end of this workshop, you'll be able to:
 
 To participate in the workshop, you’ll use:
 
-- **[Astro](https://www.astronomer.io/product/)** – a managed Airflow platform (free trial available)
-- **[Astro CLI](https://www.astronomer.io/docs/astro/cli)** – to manage projects locally
-- **Astro IDE** – a web-based development environment
-
 Follow the steps below to get started:
 
-### ✅ Step 1: Create a Free Astro Trial
-
-1. Go to [this special signup link](https://www.astronomer.io/lp/signup/afsummit/?utm_campaign=event-airflow-summit-10-25) to create a free trial.
-2. Follow the prompts:
-   - Choose **"Personal"** as usage type.
-   - Create an **Organization** and a **Workspace**.
-   - Skip the deployment setup for now by clicking **"None"**, then **"Create Deployment in Astro"** (you won’t need it for the workshop).
-
----
-
-### ✅ Step 2: Install Astro CLI
-
-Install the Astro CLI on your local machine using the instructions here:  
-🔗 [Install Astro CLI](https://www.astronomer.io/docs/astro/cli/install-cli)
-
----
-
-### ✅ Step 3: Clone the Workshop Repository
+### ✅ Step 1: Clone this repo
 
 Clone this repo and switch to the correct branch:
 
@@ -69,58 +48,41 @@ cd devrel-public-workshops
 git checkout dbt-in-airflow
 ```
 
----
+### ✅ Step 2: Prepare your Python virtual enviroment
 
-### ✅ Step 4: Log Into Astro
+We recommend using Python 3.12:
 
-Run the following command to authenticate the Astro:
-
-```bash
-astro login cloud.astronomer.io
+```
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 ```
 
-- This will open your browser to complete login.
-- Make sure to select the organization you created during signup.
+### ✅ Step 3: Export environment variables
 
-### ✅ Step 5: Update BigQuery dataset name 
+Before exporting, replace `<your dataset>` by your dataset and `<absolute path to your keyfile>` by the absolute path to your keyfile.
+```
+export AIRFLOW__CORE__LOAD_EXAMPLES=False
 
-- Update your BigQuery dataset name in `dbt/jaffle_shop/profiles.yml`
+export no_proxy='*'
+export PYTHONFAULTHANDLER=true
+export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
 
-### ✅ Step 6: Update GCP Service Account Key
-
-- Add your GCP Service Account Key in `include/key.json`
-
-### ✅ Step 7: Export Project to Astro IDE
-
-Use the following command to export the current project to Astro IDE:
-
-```bash
-astro ide project export
+export BIGQUERY_DATASET=<your dataset>
+export GCP_PROJECT_ID=airflowintegrations
+export AIRFLOW_CONN_BIGQUERY_DEFAULT='{"conn_type":"google_cloud_platform","extra":{"dataset":"<your dataset>>", "project":"airflowintegrations","key_path":"<absolute path to your keyfile>"}}'
 ```
 
-- When prompted:
-    - Select "Yes" to create a new project
-    - Provide a project name of your choice
-- The Astro IDE will open in your browser with the new project
-
-### ✅ Step 8: Start a Test Deployment
-
-1. In Astro IDE, click the "Start test deployment" button
-2. This will spin up a Airflow deployment (takes a few minutes)
-3. When ready, click the dropdown next to "Sync to test" and select "Test Deployment Details"
-
-### ✅ Step 9: Open Airflow UI
-
-- Go to Astro UI
-- Click on Deployment 
-- Select "Open Airflow"
-
-### ✅ Step 10: (Alternate) Run Airflow locally
-
-To run Airflow locally execute
+### ✅ Step 4: Attempt to run a first DAG
 
 ```bash
-astro dev start --verbosity debug
+airflow dags test 1_bashoperator
+```
+
+### ✅ Step 5: Attempt to use Airflow standalone
+
+```bash
+AIRFLOW_HOME=`pwd` airflow standalone
 ```
 
 ## 🧪 Workshop Structure
