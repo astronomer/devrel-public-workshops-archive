@@ -5,4 +5,5 @@ astronomer-cosmos
 dbt-bigquery
 dbt-postgres
 apache-airflow-providers-google
-pydantic<2.11
+pydantic==2.11
+apache-airflow>3.0
