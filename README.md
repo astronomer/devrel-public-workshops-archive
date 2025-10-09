@@ -1,115 +1,142 @@
-# Productionising dbt Core with Airflow
+# 🚀 Productionising dbt Core with Airflow
 
-Welcome! 🚀
+Welcome to the official repository for Astronomer’s [**Productionising dbt Core with Airflow**](https://airflowsummit.org/sessions/2025/productionising-dbt-core/) workshop, delivered at **Airflow Summit 2025**.
 
-This is the repository for Astronomer's [Productionising dbt Core with Airflow workshop](https://airflowsummit.org/sessions/2025/productionising-dbt-core/) given at Airflow Summit 2025. The 2.5 hour workshop is designed to get you familiar with some of the main features in [Astronomer Cosmos](https://github.com/astronomer/astronomer-cosmos).
+This hands-on, 2.5-hour workshop introduces key features of [**Astronomer Cosmos**](https://github.com/astronomer/astronomer-cosmos), a powerful library for orchestrating dbt Core projects with Airflow.
 
-The workshop slides can be found [here](https://docs.google.com/presentation/d/1QlOrxCoPUtmrBceY_yZAyhAEg7qZVUd__wzje1gNnKw/edit?slide=id.g3878061f0be_0_170#slide=id.g3878061f0be_0_170).
+> 🔗 [**Workshop Slides**](https://docs.google.com/presentation/d/1QlOrxCoPUtmrBceY_yZAyhAEg7qZVUd__wzje1gNnKw/edit?slide=id.g3878061f0be_0_170)
 
-# Goal
-
-The aim with this workshop is to allow all the attendees of the workshop to run a dbt project in Airflow using different strategies. These are some of the topics we plan to cover:
-
-* Getting started with Cosmos
-   - Running dbt in Airflow
-   - Troubleshooting
-* Managing database credentials
-   - From connections to profiles
-* Configuring how to run dbt
-   - Managing dependency conflicts
-   - What are execution modes and how to use them
-   - Customising arguments per model
-* Changing how the DAG looks like
-   - Selectors
-   - Source and test nodes
-* dbt Docs
-* Running at scale
-   - Addressing performance challenges
-   - Leveraging deferrable operators
-
-# How to use this repo
-
-Set up your environment by following the instructions in the [Setup](#setup) section below. All DAGs in this repository can be run locally and on Astro. Given that dbt relies on running transformations on database, we are setting temporary credentials to BigQuery. These credentials will no longer work after the workshop.
-
-Sample solutions for DAG-writing related exercises can be found in the [`solutions/`](/solutions/) folder of the repo, note that some exercises can be solved in multiple ways.
 
 During the workshop, we strongly recommend attendees to use the recently published eBook [Orchestrating dbt with Airflow using Cosmos](https://www.astronomer.io/ebook/orchestrating-dbt-with-airflow-using-cosmos/). You can find more examples of how to use Cosmos in the [eBook companion repository](https://github.com/astronomer/cosmos-ebook-companion).
 
-# Setup
+---
 
-For this workshop, you will use a free trial of Astro to run Airflow and the Astro IDE to write DAGs. It is not necessary to understand all details of the Astro platform, but in a nutshell: Each customer has a dedicated Organization on Astro. One Organization can have multiple Workspaces (e.g. per team). A Workspace is a collection of Deployments. Each Workspace can have multiple Deployments. A Deployment is an Airflow environment hosted on Astro.
+## 🎯 Workshop Objectives
 
-## Setting up Astro
+By the end of this workshop, you'll be able to:
 
-1. Create a free trial of Astro [using this link](https://www.astronomer.io/lp/signup/afsummit/?utm_campaign=event-airflow-summit-10-25[…]munity&utm_source=comm-evt-gen&utm_content=dbt-core-workshop).
-   - After creating an account and logging in, choose `Start a Free Astro Trial` (click link Create Organization)
-   - When being asked how you want to use Astro, choose Personal
-   - Choose an Organization name and a Workspace name
-   - When asked to select a template, click `None`. Leave all other settings and click `Create Deployment in Astro`. Note that you will not need this Deployment for this workshop, but you can use it for the remaining duration of your trial.
-   - You should now see the UI of the Astro platform. Leave it for now, we'll come back to it in a few steps.
-2. Install the open source [Astro CLI](https://www.astronomer.io/docs/astro/cli/install-cli).
-3. [Clone this repository](https://github.com/astronomer/devrel-public-workshops). Get the URL by clicking on Code -> Copy to clipboard. Then run `git clone <url>`.
-4. Run `git checkout dbt-in-airflow` to switch to the `dbt-in-airflow` branch.
-5. Ensure you are authenticated to your Astro trial by running `astro login` in your terminal. It will prompt you to go to your browser to sign in.
-6. Export your project to the Astro IDE by running `astro ide project export` in your terminal. Choose `y` to create a new project, and give your project a name when prompted. Your new Astro IDE project should automatically open in a browser.
-7. To start Airflow, click the `Start test deployment` button. This will create a small Airflow Deployment for you to run your dags. It may take a few minutes to spin up.
-8. To enable scheduled dag runs in your new Airflow Deployment, click on the drop down next to `Sync to test`, and click `Test Deployment Details`.
+- Run dbt Core projects in Airflow using different orchestration strategies
+- Understand how Cosmos simplifies dbt orchestration
+- Customize DAG generation and dbt execution modes
+- Manage secrets and credentials securely
+- Scale dbt workloads effectively with Airflow
 
-   ![Test deployment details](img/deployment-change-1.png)
+**Key topics include:**
 
-In the Deployment, you need to perform 2 changes:
+- Running dbt via Cosmos
+- Database credential management
+- Execution modes and dependency management
+- DAG customization (selectors, tests, sources)
+- Integrating dbt Docs
+- Running dbt at scale with deferrable operators
 
-   - Update the minimum workers by going to the `Details` tab, then `Execution` and click `Edit`.
-   ![Execution](img/deployment-change-2.png)
+---
 
-   Set `Min # Workers` to 0, and click `Update Deployment`.
-   ![Min workers](img/deployment-change-3.png)
+## 🛠️ Setup Instructions
 
-   - Go to the `Environment` tab, click `Edit Deployment Variables`, and delete the `AIRFLOW__SCHEDULER__USE_JOB_SCHEDULE` variable.
+To participate in the workshop, you’ll use:
 
-   ![Env var](img/deployment-change-4.png)
+- **[Astro](https://www.astronomer.io/product/)** – a managed Airflow platform (free trial available)
+- **[Astro CLI](https://www.astronomer.io/docs/astro/cli)** – to manage projects locally
+- **Astro IDE** – a web-based development environment
 
-9. Go back to the Astro IDE, and in the drop down next to `Sync to Test`, click on `Open Airflow`.
+Follow the steps below to get started:
 
-# Overview about exercises
+### ✅ Step 1: Create a Free Astro Trial
 
-## dbt Projects
+1. Go to [this special signup link](https://www.astronomer.io/lp/signup/afsummit/?utm_campaign=event-airflow-summit-10-25) to create a free trial.
+2. Follow the prompts:
+   - Choose **"Personal"** as usage type.
+   - Create an **Organization** and a **Workspace**.
+   - Skip the deployment setup for now by clicking **"None"**, then **"Create Deployment in Astro"** (you won’t need it for the workshop).
 
-The exercises in this repo use two dbt projects:
+---
 
-1. [Jaffle Shop](https://github.com/dbt-labs/jaffle-shop)
+### ✅ Step 2: Install Astro CLI
 
-2. [FHIR dbt analytics](https://github.com/google/fhir-dbt-analytics)
+Install the Astro CLI on your local machine using the instructions here:  
+🔗 [Install Astro CLI](https://www.astronomer.io/docs/astro/cli/install-cli)
 
-While we encourage you to modify and use your own dbt projects with Cosmos, we will focus on running examples and supporting users using these two projects.
+---
 
-## Methodology
+### ✅ Step 3: Clone the Workshop Repository
 
-Each exercise will have three stages:
+Clone this repo and switch to the correct branch:
 
-a) Introduction to the topic (~3 minutes)
-b) Hand's on exercise (~12 minutes)
-c) Solution review (~5 minutes)
+```bash
+git clone https://github.com/astronomer/devrel-public-workshops.git
+cd devrel-public-workshops
+git checkout dbt-in-airflow
+```
 
-If you don't finish the exercise, don't worry, you can still do the next exercise.
+---
 
-If you finish the exercise quickly, you have two options:
-1. Offer help to another attendee
-2. Do the bonus exercises
+### ✅ Step 4: Log Into Astro
 
-# Exercises
+Run the following command to authenticate the Astro:
 
-## Exercise 1: Getting started with Cosmos
+```bash
+astro login cloud.astronomer.io
+```
 
-### Goal
+- This will open your browser to complete login.
+- Make sure to select the organization you created during signup.
 
-Understand the difference between using a BashOperator and Cosmos to run a dbt project.
+### ✅ Step 5: Update BigQuery dataset name 
 
-### Context
+- Update your BigQuery dataset name in `dbt/jaffle_shop/profiles.yml`
 
-You are given an Airflow repo that has a DAG that runs a dbt Core pipeline using BashOperator.
+### ✅ Step 6: Update GCP Service Account Key
 
-### Tasks
+- Add your GCP Service Account Key in `include/key.json`
 
-a) Run the given `BashOperator` DAG and see it working.
-b) Create a new DAG to run the dbt project with a Cosmos `DbtDag` instead
+### ✅ Step 7: Export Project to Astro IDE
+
+Use the following command to export the current project to Astro IDE:
+
+```bash
+astro ide project export
+```
+
+- When prompted:
+    - Select "Yes" to create a new project
+    - Provide a project name of your choice
+- The Astro IDE will open in your browser with the new project
+
+### ✅ Step 8: Start a Test Deployment
+
+1. In Astro IDE, click the "Start test deployment" button
+2. This will spin up a Airflow deployment (takes a few minutes)
+3. When ready, click the dropdown next to "Sync to test" and select "Test Deployment Details"
+
+### ✅ Step 9: Open Airflow UI
+
+- Go to Astro UI
+- Click on Deployment 
+- Select "Open Airflow"
+
+### ✅ Step 10: (Alternate) Run Airflow locally
+
+To run Airflow locally execute
+
+```bash
+astro dev start --verbosity debug
+```
+
+## 🧪 Workshop Structure
+
+Each exercise follows this format:
+- Introduction (~3 minutes)
+- Hands-on Exercise (~12 minutes)
+- Solution Review (~5 minutes)
+
+Don’t worry if you don’t finish each exercise – you’ll still be able to follow the rest of the workshop.
+
+
+## 📁 dbt Projects Used
+
+We’ll use the following dbt project for the exercises:
+
+- [Jaffle Shop](https://github.com/astronomer/devrel-public-workshops/tree/dbt-in-airflow/dbt/jaffle_shop)
+
+You’re encouraged to explore with your own dbt projects as well!
