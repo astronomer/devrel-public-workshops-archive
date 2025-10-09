@@ -1,36 +1,11 @@
-default:
+bq_profile:
   target: dev
   outputs:
     dev:
-      type: postgres
-      host: "{{ env_var('POSTGRES_HOST') }}"
-      user: "{{ env_var('POSTGRES_USER') }}"
-      password: "{{ env_var('POSTGRES_PASSWORD') }}"
-      port: "{{ env_var('POSTGRES_PORT') | int }}"
-      dbname: "{{ env_var('POSTGRES_DB') }}"
-      schema: "{{ env_var('POSTGRES_SCHEMA') }}"
-      threads: 4
-
-snowflake_profile:
-  target: dev
-  outputs:
-    dev:
-      type: snowflake
-      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
-      user: "{{ env_var('SNOWFLAKE_USER') }}"
-      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
-      schema: "{{ env_var('SNOWFLAKE_SCHEMA') }}"
-      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE') }}"
-      database: "{{ env_var('SNOWFLAKE_DATABASE') }}"
-
-postgres_profile:
-  target: dev
-  outputs:
-    dev:
-      type: postgres
-      dbname: "{{ env_var('POSTGRES_DB') }}"
-      host: "{{ env_var('POSTGRES_HOST') }}"
-      pass: "{{ env_var('POSTGRES_PASSWORD') }}"
-      port: 5432 # "{{ env_var('POSTGRES_PORT') | as_number }}"
-      schema: "{{ env_var('POSTGRES_SCHEMA') }}"
-      user: "{{ env_var('POSTGRES_USER') }}"
+      type: bigquery
+      method: service-account
+      project: "{{ env_var('GCP_PROJECT_ID', 'airflowintegrations') }}"
+      dataset: "{{ env_var('BIGQUERY_DATASET', 'afs2025_schema_60') }}"
+      threads: 16 # Must be a value of 1 or greater
+      keyfile:  "{{ env_var('BQ_KEYFILE_PATH', '/usr/local/airflow/include/key.json') }}"
+      OPTIONAL_CONFIG: VALUE
