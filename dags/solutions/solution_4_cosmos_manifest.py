@@ -15,7 +15,6 @@ PROFILE_NAME = "bq_profile"
 TARGET_NAME = "dev"
 PROFILE_YML_FILEPATH = DBT_PROJECT_DIR / "profiles.yml"
 DBT_MANIFEST_PATH = Path(__file__).parent.parent.parent / "include/manifest.json"
-breakpoint()
 
 profile_config = ProfileConfig(
     profile_name=PROFILE_NAME,
