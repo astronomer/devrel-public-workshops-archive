@@ -7,14 +7,9 @@ This is the repository for Astronomer's GenAI with Airflow hands-on workshop. Th
 
 ## How to use this repo
 
-Set up your environment by following the instructions in the [Setup](#setup) section below. All DAGs in this repository can be run locally and on Astro without connecting to external systems. The exercises are designed to get you exposure to new features in Airflow 3. There are also optional exercises that require an AWS account.
+Set up your environment by following the instructions in the [Setup](#setup) section below. All DAGs in this repository can be run locally using open source tools, including Airflow and Weaviate. There are also optional exercises that require an OpenAI API key.
 
 Sample solutions for DAG-writing related exercises can be found in the [`dags/solutions`](/solutions/) folder of the repo, note that some exercises can be solved in multiple ways.
-
-> [!TIP]
-> Consider using [Ask Astro](ask.astronomer.io) if you need additional guidance with any of the exercises.
-
-For additional Airflow 3.0 examples, see [our repo](https://github.com/astronomer/airflow-3-demos).
 
 ### Setup
 
@@ -28,7 +23,7 @@ To set up a local Airflow environment you have two options, you can either use t
 
    ![Forking the repository](img/fork_repo.png)
 
-4. Clone the repository and run `git checkout airflow-3-0` to switch to the airflow 3 branch
+4. Clone the repository and run `git checkout genai-with-airflow` to switch to the airflow 3 branch
 5. Run `astro dev start` in the root of the cloned repository to start the Airflow environment.
 6. Access the Airflow UI at `localhost:8080` in your browser. Log in using `admin` as both the username and password.
 
@@ -40,7 +35,7 @@ If you can't install the CLI, you can run the project from your forked repo usin
 
    ![Forking the repository](img/fork_repo.png)
 
-2. Make sure you are on the `airflow-3-0` branch.
+2. Make sure you are on the `genai-with-airflow` branch.
 3. Click on the green "Code" button and select the "Codespaces" tab. 
 4. Click on the 3 dots and then `+ New with options...` to create a new Codespace with a configuration, make sure to select a Machine type of at least `4-core`.
 
