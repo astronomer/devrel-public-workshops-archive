@@ -3,7 +3,6 @@ from airflow.sdk import dag, task, Asset
 COLLECTION_NAME = "Books"
 EMBEDDING_MODEL_NAME = "BAAI/bge-small-en-v1.5"
 
-
 @dag(
     schedule=[Asset("my_book_vector_data")],
     params={"query_str": "A philosophical book"},
