@@ -1,0 +1,6 @@
+# Astro Runtime includes the following pre-installed providers packages: https://www.astronomer.io/docs/astro/runtime-image-architecture#provider-packages
+fastembed==0.5.1
+apache-airflow-providers-weaviate==3.0.3
+airflow-ai-sdk[openai]==0.1.7
+protobuf==5.29.0
+grpcio==1.71.0
