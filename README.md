@@ -74,14 +74,33 @@ After you have Airflow running locally, complete these exercises to get more fam
 
 ## Exercise 1: Explore the Airflow UI
 
+Airflow 3 has a modern, React-based UI that is often the first stop to monitor what's going on in your pipelines. Once you have started Airflow, explore the new UI to develop your workflow. For more background on the Airflow UI, see [An Introduction to the Airflow UI](https://www.astronomer.io/docs/learn/airflow-ui).
+
+1. Review the new Home page. There won't be much here to start, but you'll change that momentarily!
+2. Explore the Dags and Assets tabs. See if you can get an understanding of the relationship between the DAGs in the environment so far. What dependencies currently exist?
+3. Switch between light mode and dark mode 😎
+4. Try a different language from the User menu.
 
 ## Exercise 2: Run the RAG pipeline
 
+In the previous exercise, you explored the UI and saw that in your current Airflow environment, you have two Dags (`fetch_data`, and `query_data`). Conceptually, each Dag is a data pipeline: `fetch_data` is gathers data from a couple of text files in your include directory, creates a Weaviate collection to store them, creates vector embeddings, and loads them to the vector db. `query_data` searches the vector db for a book based on the input you provide.
+
+1. From the Dags page, unpause both Dags. `fetch_data` should run automatically, `query_data` should be triggered afterwards.
+2. Review the `fetch_data` Dag in more detail by looking at the grid and graph views. See if you can get an understanding of what the tasks in this Dag are doing. It can be helpful to look at the code for the Dag, which is shown in the UI (though you can't update the code here)!
+3. Now look at the `query_data` Dag in more detail. When it was triggered automatically, it ran with the default input, which is "A philosophical book". Trigger the Dag manually, and input a different genre of book into the `query_str` parameter.
+4. Once the Dag has completed, check the task logs for the `search_vector_db_for_a_book` task to see what book was recommended. 
 
 ## Exercise 3: Review features for running in production
+
+Airflow has many features that make it ideal for orchestrating data pipelines of all kinds, including GenAI workflows. Let's take a look at some of those used in this example!
+
+1. First, let's look at the schedules for these Dags. When will `fetch_data` run? 
+   You also will have noticed in Exercises 1 and 2 that when you trigger `fetch_data`, `query_data` runs automatically afterwards. This is because there's no sense querying data that doesn't exist, so it doesn't make sense to use a time-based schedule for  `query_data`. Instead, we schedule it using an asset, so it only runs when the data it needs is available. For more on assets, see [our guide](https://www.astronomer.io/docs/learn/airflow-datasets).
+2. Another great feature of Airflow is the ability to dynamically adapt your pipelines at runtime. Take a look at the graph of the `fetch_data` Dag. You'll see that two of the tasks -  `transform_book_description_files` and `create_vector_embeddings` - have brackets after the task name `[0]`. This means the tasks are dynamically mapped, so copies of them will be created based when the Dag runs based on upstream input. Add a new file in the `include/data/` directory called `book_descriptions_3.txt`. For contents of the file, you can either copy from `book_descriptions_2.txt` (duplicates are not a problem here), or you can add you own books in the same format! Save the file, and then rerun the `fetch_data` Dag. See how the mapped instances changed now that there is a new file. For more on dynamic task mapping, see [our guide](https://www.astronomer.io/docs/learn/dynamic-tasks).
+3. 
 
 
 ## (Optional) Exercise 4: Add an LLM task
 
 > [!Note]
-> This task requires an OpenAI API Key. If you don't have one, it's okay to skip this exercise.
+> This task requires an OpenAI API Key. If you don't have one, it's okay to skip this exercise and only watch the demo.
