@@ -97,10 +97,30 @@ Airflow has many features that make it ideal for orchestrating data pipelines of
 1. First, let's look at the schedules for these Dags. When will `fetch_data` run? 
    You also will have noticed in Exercises 1 and 2 that when you trigger `fetch_data`, `query_data` runs automatically afterwards. This is because there's no sense querying data that doesn't exist, so it doesn't make sense to use a time-based schedule for  `query_data`. Instead, we schedule it using an asset, so it only runs when the data it needs is available. For more on assets, see [our guide](https://www.astronomer.io/docs/learn/airflow-datasets).
 2. Another great feature of Airflow is the ability to dynamically adapt your pipelines at runtime. Take a look at the graph of the `fetch_data` Dag. You'll see that two of the tasks -  `transform_book_description_files` and `create_vector_embeddings` - have brackets after the task name `[0]`. This means the tasks are dynamically mapped, so copies of them will be created based when the Dag runs based on upstream input. Add a new file in the `include/data/` directory called `book_descriptions_3.txt`. For contents of the file, you can either copy from `book_descriptions_2.txt` (duplicates are not a problem here), or you can add you own books in the same format! Save the file, and then rerun the `fetch_data` Dag. See how the mapped instances changed now that there is a new file. For more on dynamic task mapping, see [our guide](https://www.astronomer.io/docs/learn/dynamic-tasks).
-3. 
+3. Finally, what happens if something fails? Airflow has you covered with features like retries and notifications so your Dags have the best chance of succeeding, and when something does go wrong, you're made aware. Review the `fetch_data` Dag and see if you can tell what will happen if a task fails.
 
 
 ## (Optional) Exercise 4: Add an LLM task
 
 > [!Note]
 > This task requires an OpenAI API Key. If you don't have one, it's okay to skip this exercise and only watch the demo.
+
+In Exercises 1-3, you saw how Airflow can be used to orchestrate RAG pipelines with simple Python code, and provides a rich feature set for running those pipelines scalably in production. But Airflow orchestration doesn't stop at RAG - it can also be used for patterns like batch inference, ad-hoc inference, multi-agent orchestration, and more. Let's see how it can be used to add an LLM to this workflow!
+
+For this exercise, we will use the Airflow AI SDK, an open source package made by Astronomer, to make a call to OpenAI to get a more detailed summary of the book recommendation that was provided to us.
+
+1. Double check that the `.env` file you created in the Setup includes your OpenAI API key. If it doesn't, add it, and then restart your local Airflow project by running `astro dev restart`.
+2. In the `query_data.py` file, add a new task using the Airflow AI SDK `@task.llm` decorator:
+
+   ```python
+   @task.llm(
+        model="gpt-4o-mini",
+        output_type=str,
+        system_prompt="You are a helpful book expert. You will receive information about a book including its title, author, and description. Provide a concise, engaging summary of the book based on this information.",
+    )
+    def get_book_summary(book_info: dict) -> str:
+        return f"Please provide a summary for the following book:\n\nTitle: {book_info['title']}\nAuthor: {book_info['author']}\nDescription: {book_info['description']}"
+   ```
+3. Adjust the task dependencies in the Dag so that `get_book_summary` comes after `search_vector_db_for_a_book`. There are multiple ways to do this, but one easy way looks like this: `get_book_summary(search_vector_db_for_a_book())`.
+4. Save the file. Then go back to the Airflow UI and check that your changes are reflected (this might take up to a minute). Once your new task shows up, run the Dag again and check out the LLM results in the task logs!
+5. Bonus: Now that we have made a structural change to this Dag, we can see the Dag versioning feature at work. From the Graph of the Dag, under `Options`, toggle between the two versions to see how the Dag structure has changed.
