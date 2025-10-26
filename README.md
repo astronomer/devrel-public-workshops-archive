@@ -21,16 +21,15 @@ To set up a local Airflow environment you have two options, you can either use t
 
 #### Option 1: Astro CLI
 
-1. Make sure you have [Docker](https://docs.docker.com/get-docker/) or Podman installed and running on your machine.
-2. Install the free [Astro CLI](https://www.astronomer.io/docs/astro/cli/install-cli).
-3. Fork this repository and clone it to your local machine. Make sure you uncheck the `Copy the main branch only` option when forking.
+1. Install the free [Astro CLI](https://www.astronomer.io/docs/astro/cli/install-cli) to run Airflow in a containerized setup. If you don't have Docker installed, the Astro CLI will install Podman. 
+2. Fork this repository and clone it to your local machine. Make sure you uncheck the `Copy the main branch only` option when forking.
 
    ![Forking the repository](img/fork_repo.png)
 
-4. Clone the repository and run `git checkout genai-with-airflow` to switch to the correct branch.
-5. Create a new file called `.env` in the root directory. Copy the contents of the `.env_example` file into `.env`. If you have an OpenAI API key, replace `<your-openai-api-key>` with it. Save the file.
-6. Run `astro dev start` in the root of the cloned repository to start the Airflow environment.
-7. Access the Airflow UI at `localhost:8080` in your browser. Log in using `admin` as both the username and password.
+3. Clone the repository and run `git checkout genai-with-airflow` to switch to the correct branch.
+4. Create a new file called `.env` in the root directory. Copy the contents of the `.env_example` file into `.env`. If you have an OpenAI API key, replace `<your-openai-api-key>` with it. Save the file.
+5. Run `astro dev start` in the root of the cloned repository to start the Airflow environment.
+6. Access the Airflow UI at `localhost:8080` in your browser.
 
 #### Option 2: GitHub Codespaces
 
@@ -66,7 +65,7 @@ If you can't install the CLI, you can run the project from your forked repo usin
 > [!TIP]
 > If when accessing the forward URL you get an error like `{"detail":"Invalid or unsafe next URL"}`, you will need to modify the forwarded URL. Delete everything forward of `next=....` (this should be after `/login?`, ). The URL will update, adn then remove `:8080`, so your URL should endd in `.app.github.dev`
 
-8. Log into the Airflow UI using `admin` as both the username and password. It is possible that after logging in you see an error, in this case you have to open the URL again from the ports tab.
+8. It is possible that after opening the Airflow UI you see an error, in this case you have to open the URL again from the ports tab.
 
 # Exercises
 
@@ -77,16 +76,16 @@ After you have Airflow running locally, complete these exercises to get more fam
 Airflow 3 has a modern, React-based UI that is often the first stop to monitor what's going on in your pipelines. Once you have started Airflow, explore the new UI to develop your workflow. For more background on the Airflow UI, see [An Introduction to the Airflow UI](https://www.astronomer.io/docs/learn/airflow-ui).
 
 1. Review the new Home page. There won't be much here to start, but you'll change that momentarily!
-2. Explore the Dags and Assets tabs. See if you can get an understanding of the relationship between the DAGs in the environment so far. What dependencies currently exist?
+2. Explore the Dags and Assets tabs. See if you can get an understanding of the relationship between the Dags in the environment so far. What dependencies do currently exist?
 3. Switch between light mode and dark mode 😎
 4. Try a different language from the User menu.
 
 ## Exercise 2: Run the RAG pipeline
 
-In the previous exercise, you explored the UI and saw that in your current Airflow environment, you have two Dags (`fetch_data`, and `query_data`). Conceptually, each Dag is a data pipeline: `fetch_data` is gathers data from a couple of text files in your include directory, creates a Weaviate collection to store them, creates vector embeddings, and loads them to the vector db. `query_data` searches the vector db for a book based on the input you provide.
+In the previous exercise, you explored the UI and saw that in your current Airflow environment, you have two Dags (`fetch_data`, and `query_data`). Conceptually, each Dag is a data pipeline: `fetch_data` gathers data from a couple of text files in your include directory, creates a Weaviate collection to store them, creates vector embeddings, and loads them to the vector db. `query_data` searches the vector db for a book based on the input you provide.
 
-1. From the Dags page, unpause both Dags. `fetch_data` should run automatically, `query_data` should be triggered afterwards.
-2. Review the `fetch_data` Dag in more detail by looking at the grid and graph views. See if you can get an understanding of what the tasks in this Dag are doing. It can be helpful to look at the code for the Dag, which is shown in the UI (though you can't update the code here)!
+1. From the Dags page, unpause both Dags. `fetch_data` should run automatically, `query_data` should be automatically triggered afterwards.
+2. Review the `fetch_data` Dag in more detail by looking at the grid and graph views. See if you can get an understanding of what the tasks in this Dag are doing. It can be helpful to look at the code for the Dag, which is shown in the UI by selecting the Code tab in the right half of the screen (though you can't update the code here)!
 3. Now look at the `query_data` Dag in more detail. When it was triggered automatically, it ran with the default input, which is "A philosophical book". Trigger the Dag manually, and input a different genre of book into the `query_str` parameter.
 4. Once the Dag has completed, check the task logs for the `search_vector_db_for_a_book` task to see what book was recommended. 
 
@@ -122,5 +121,5 @@ For this exercise, we will use the Airflow AI SDK, an open source package made b
         return f"Please provide a summary for the following book:\n\nTitle: {book_info['title']}\nAuthor: {book_info['author']}\nDescription: {book_info['description']}"
    ```
 3. Adjust the task dependencies in the Dag so that `get_book_summary` comes after `search_vector_db_for_a_book`. There are multiple ways to do this, but one easy way looks like this: `get_book_summary(search_vector_db_for_a_book())`.
-4. Save the file. Then go back to the Airflow UI and check that your changes are reflected (this might take up to a minute). Once your new task shows up, run the Dag again and check out the LLM results in the task logs!
-5. Bonus: Now that we have made a structural change to this Dag, we can see the Dag versioning feature at work. From the Graph of the Dag, under `Options`, toggle between the two versions to see how the Dag structure has changed.
+4. Save the file. Then go back to the Airflow UI and check that your changes are reflected (this might take up to 30 seconds, or you can forse an update by running `astro dev run dags reserialize`). Once your new task shows up, run the Dag again and check out the LLM results in the task logs!
+5. Bonus: Now that we have made a structural change to this Dag, we can see the [Dag versioning](https://www.astronomer.io/docs/learn/airflow-dag-versioning) feature at work. From the Graph of the Dag, under `Options`, toggle between the two versions to see how the Dag structure has changed.
