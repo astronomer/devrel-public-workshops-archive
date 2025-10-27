@@ -121,5 +121,5 @@ For this exercise, we will use the Airflow AI SDK, an open source package made b
         return f"Please provide a summary for the following book:\n\nTitle: {book_info['title']}\nAuthor: {book_info['author']}\nDescription: {book_info['description']}"
    ```
 3. Adjust the task dependencies in the Dag so that `get_book_summary` comes after `search_vector_db_for_a_book`. There are multiple ways to do this, but one easy way looks like this: `get_book_summary(search_vector_db_for_a_book())`.
-4. Save the file. Then go back to the Airflow UI and check that your changes are reflected (this might take up to 30 seconds, or you can forse an update by running `astro dev run dags reserialize`). Once your new task shows up, run the Dag again and check out the LLM results in the task logs!
+4. Save the file. Then go back to the Airflow UI and check that your changes are reflected (this might take up to 30 seconds, or you can force an update by running `astro dev run dags reserialize`). Once your new task shows up, run the Dag again and check out the LLM results in the task logs!
 5. Bonus: Now that we have made a structural change to this Dag, we can see the [Dag versioning](https://www.astronomer.io/docs/learn/airflow-dag-versioning) feature at work. From the Graph of the Dag, under `Options`, toggle between the two versions to see how the Dag structure has changed.
