@@ -1,0 +1,45 @@
+version: 2.0
+
+defaultLocaleCode: en-US
+localeCodes:
+  - en-US
+
+awsAccountConfig:
+  accountSources:
+    - workshop_studio
+  regionConfiguration:
+    deployableRegions:
+      required:
+        - us-east-1
+    minAccessibleRegions: 1
+    maxAccessibleRegions: 3
+    accessibleRegions:
+      required:
+        - us-east-1
+  participantRole:
+    managedPolicies:
+      - "arn:aws:iam::aws:policy/AmazonSQSFullAccess"
+      - "arn:aws:iam::aws:policy/AmazonBedrockFullAccess"
+    iamPolicies:
+      - static/templates/custom-iam-policy.json
+
+infrastructure:
+  cloudformationTemplates:
+    - templateLocation: static/templates/astro-aws-workshop-cfn.yaml
+      label: astro-airflow-workshop
+
+additionalLinks:
+  - title: "Astronomer Documentation"
+    link: "https://www.astronomer.io/docs/"
+  - title: "Apache Airflow Documentation"
+    link: "https://airflow.apache.org/docs/"
+
+params:
+  workshopTitle: "Discover Airflow 3 Workshop"
+  duration: "3-4 hours"
+  level: "200"
+  services:
+    - "Apache Airflow"
+    - "Astronomer"
+    - "Amazon SQS"
+    - "Amazon Bedrock"

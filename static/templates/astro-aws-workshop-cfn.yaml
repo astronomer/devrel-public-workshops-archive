@@ -1,0 +1,60 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Astro Airflow 3 Workshop - AWS Resources for Module 6'
+
+Parameters:
+  WorkshopParticipantRole:
+    Type: String
+    Default: 'TeamRole'
+    Description: 'IAM role name for workshop participants'
+
+Resources:
+  # SQS Queue for event-driven scheduling
+  WorkshopSQSQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: 'airflow-workshop-queue'
+      VisibilityTimeoutSeconds: 300
+      MessageRetentionPeriod: 1209600
+      ReceiveMessageWaitTimeSeconds: 20
+
+  # IAM Policy for workshop resources
+  WorkshopIAMPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: 'AstroAirflowWorkshopPolicy'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'sqs:ReceiveMessage'
+              - 'sqs:DeleteMessage'
+              - 'sqs:SendMessage'
+              - 'sqs:GetQueueAttributes'
+            Resource: !GetAtt WorkshopSQSQueue.Arn
+          - Effect: Allow
+            Action:
+              - 'bedrock:InvokeModel'
+              - 'bedrock:ListFoundationModels'
+            Resource: '*'
+      Roles:
+        - !Ref WorkshopParticipantRole
+
+Outputs:
+  SQSQueueURL:
+    Description: 'SQS Queue URL for workshop'
+    Value: !Ref WorkshopSQSQueue
+    Export:
+      Name: !Sub '${AWS::StackName}-SQSQueueURL'
+
+  SQSQueueArn:
+    Description: 'SQS Queue ARN'
+    Value: !GetAtt WorkshopSQSQueue.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-SQSQueueArn'
+
+  WorkshopRegion:
+    Description: 'AWS Region for workshop'
+    Value: !Ref 'AWS::Region'
+    Export:
+      Name: !Sub '${AWS::StackName}-Region'
