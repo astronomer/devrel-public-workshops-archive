@@ -4,15 +4,6 @@ Welcome! 🚀
 
 This is the repository for Astronomer's Discover Airflow 3 hands-on workshop. The workshop is designed to get you familiar with some of the biggest new features in Airflow 3.X.
 
-## AWS workshop notes
-
-To run the preview build locally, use the `preview_build` binary. Ensure to allow it to be executed via removing it from quarantine.
-
-```bash
-xattr -d com.apple.quarantine ./preview_build
-./preview_build -port 8081 -input .
-```
-
 ## How to use this repo
 
 Set up your environment by following the instructions in the [Setup](#setup) section below. All DAGs in this repository can be run locally and on Astro without connecting to external systems. The exercises are designed to get you exposure to new features in Airflow 3. There are also optional exercises that require an AWS account.
