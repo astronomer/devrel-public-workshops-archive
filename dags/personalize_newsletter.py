@@ -68,7 +68,7 @@ from airflow.sdk import dag
 
 @dag(
     start_date=datetime(2025, 9, 1),
-    schedule="@daily",
+    schedule=(Asset("formatted_newsletter")),
     default_args={
         "retries": 2,
         "retry_delay": duration(minutes=3),
@@ -107,7 +107,6 @@ def personalize_newsletter():
         return user
 
     _get_weather_info = get_weather_info.expand(user=_get_user_info)
-
 
     @task(outlets=[Asset("personalized_newsletters")])
     def create_personalized_newsletter(
