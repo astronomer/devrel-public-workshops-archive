@@ -29,9 +29,7 @@ Dag versioning is a new feature in Airflow 3 that tracks changes to your Dag cod
 1. Check how many versions are available in the dropdown
 2. You should see multiple versions from the changes made in the previous module
 
-::expand[Why do you have multiple versions?]{header="💡 Think About It"}
-Each time you modified the Dag structure (adding the HITL operator), Airflow created a new version to track these changes. But only, if a Dag run is between the changes.
-::
+::expand[Each time you modified the Dag structure (adding the HITL operator), Airflow created a new version to track these changes. But only, if a Dag run is between the changes.]{header="💡 Why do you have multiple versions?"}
 
 ### 3. Compare Graph Versions
 

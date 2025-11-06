@@ -9,6 +9,6 @@ This section contains hands-on modules that will guide you through the key featu
 
 ## Module Overview
 
-The modules are designed to progressively introduce you to Airflow 3's new capabilities:
+The modules are designed to progressively introduce you to Airflow 3's capabilities:
 
 ::children

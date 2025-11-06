@@ -7,7 +7,7 @@ weight: 30
 
 The final preparation step is to setup a **free** trial of Astro to run Airflow and the Astro IDE to write Dags. It is not necessary to understand all details of the Astro platform, but in a nutshell: Each customer has a dedicated Organization on Astro. One Organization can have multiple Workspaces (e.g. per team). A Workspace is a collection of Deployments. Each Workspace can have multiple Deployments. A Deployment is an Airflow environment hosted on Astro.
 
-1. Create a [free trial of Astro](https://www.astronomer.io/lp/signup/).
+1. Create a [free trial of Astro](https://www.astronomer.io/lp/signup/?utm_source=conference&utm_medium=web&utm_campaign=reinvent-25).
    - After creating an account and logging in, choose `Start a Free Astro Trial` (click link Create Organization)
    - When being asked how you want to use Astro, choose Personal
    - Choose an Organization name and a Workspace name

@@ -7,7 +7,7 @@ weight: 0
 
 Welcome to Play Astro: an immersive learning quest for building GenAI pipelines with Apache Airflow and Amazon Bedrock!
 
-This workshop is designed to get you familiar with some of the biggest new features in Apache Airflow 3. You'll learn about the new UI, Assets (the evolution of datasets), human-in-the-loop workflows, Dag versioning, and event-driven scheduling with Amazon SQS and how to integrate Amazon Bedrock.
+This workshop is designed to get you familiar with some of the biggest features in Apache Airflow 3. You'll learn about the new UI, Assets (the evolution of datasets), human-in-the-loop workflows, Dag versioning, and event-driven scheduling with Amazon SQS and how to integrate Amazon Bedrock.
 
 ## Workshop Overview
 

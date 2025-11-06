@@ -45,39 +45,53 @@ This asset-oriented approach puts the data asset front and center, automatically
 - Better visualization of workflows and dependencies
 - Enhanced debugging and monitoring capabilities
 
+::alert[More information: [Introduction to the Airflow UI](https://www.astronomer.io/docs/learn/airflow-ui)]{type="info"}
+
+Learn more about the UI in the .
+
 ### Human-in-the-Loop Operators
 - Manual intervention points in automated workflows
 - Approval/rejection workflows with rich content display
 - Batch processing of approval requests
+
+Check the  guide for more details and an overview of all available options.
+
+::alert[More information: [Human-in-the-loop workflows with Airflow](https://www.astronomer.io/docs/learn/airflow-human-in-the-loop)]{type="info"}
 
 ### Built-in Backfills
 - UI-driven historical data processing (can also be triggered via API and CLI)
 - Progress tracking and monitoring
 - Flexible reprocessing options
 
+::alert[More information: [Rerun Airflow Dags and tasks](https://www.astronomer.io/docs/learn/rerunning-dags#backfill)]{type="info"}
+
 ### DAG Versioning
 - Automatic tracking of structural changes
 - Visual comparison between versions
 - Code history and change management
+
+::alert[More information: [Dag Versioning and Dag Bundles](https://www.astronomer.io/docs/learn/airflow-dag-versioning)]{type="info"}
 
 ### Event-Driven Scheduling
 - SQS integration for real-time triggers
 - Dynamic workflow execution based on external events
 - Scalable processing of user requests
 
+::alert[More information: [Event-driven scheduling](https://www.astronomer.io/docs/learn/airflow-event-driven-scheduling)]{type="info"}
+
 ## Technology Stack
 
 ### Core Platform
-- **Apache Airflow 3**: Latest workflow orchestration features
-- **Astro IDE**: Author, test, and release production-ready DAGs from your browser
-- **Astro**: Managed Airflow platform
-- **Python**: Primary development language
-- **Git**: Version control and collaboration
+- **[Apache Airflow 3](https://airflow.apache.org/)**: Latest workflow orchestration features
+- **[Astro IDE](https://www.astronomer.io/product/ide/)**: Author, test, and release production-ready DAGs from your browser
+- **[Astro](https://www.astronomer.io/product/)**: Managed Airflow platform
+- **[Python](https://www.python.org/)**: Primary development language
+- **[Git](https://git-scm.com/)**: Version control and collaboration
 
 ### External Integrations
-- **ZenQuotes API**: Motivational quote source
-- **Open-Meteo API**: Weather data provider
-- **Amazon SQS**: Event-driven messaging
-- **Amazon Bedrock**: GenAI capabilities
+- **[ZenQuotes API](https://zenquotes.io/)**: Motivational quote source
+- **[Open-Meteo API](https://open-meteo.com/)**: Weather data provider
+- **[Amazon SQS](https://aws.amazon.com/sqs/)**: Event-driven messaging
+- **[Amazon Bedrock](https://aws.amazon.com/bedrock/)**: GenAI capabilities
 
 This architecture provides a comprehensive foundation for understanding modern data orchestration while demonstrating practical, real-world applications of Airflow 3's enhanced capabilities.
