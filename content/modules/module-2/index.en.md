@@ -1,145 +1,110 @@
 ---
-title: "Module 2: Use Assets"
+title: "Module 2: Add Human-in-the-Loop"
 weight: 20
 ---
 
-# Module 2: Use Assets
+# Module 2: Add Human-in-the-Loop
 
-Assets are the next evolution of Airflow datasets, representing collections of logically related data. In this exercise, you'll complete the ETL pipeline by creating a new asset and implementing asset-based scheduling.
+Airflow 3.1 introduced human-in-the-loop (HITL) operators, allowing manual intervention in automated workflows. In this exercise, you'll add an approval step for newsletter personalization.
 
 ## Learning Objectives
 
-- Create and configure Assets in Airflow 3
-- Implement asset-oriented scheduling
-- Complete the newsletter ETL pipeline
-- Understand the difference between asset-oriented and task-oriented DAGs
+- Implement Human-in-the-Loop operators
+- Create approval/rejection workflows
+- Understand manual intervention patterns in automated pipelines
+- Navigate the Required Actions interface
 
 ## Background
 
-In your current environment, you have:
-- **Asset-oriented DAGs**: `raw_zen_quotes`, `selected_quotes` 
-- **Task-oriented DAG**: `personalize_newsletter`
-- **Assets**: `raw_zen_quotes`, `selected_quotes`, `personalized_newsletters`
+Human-in-the-loop workflows are essential when you need:
+- Manual review and approval processes
+- Quality control checkpoints
+- Business decision points in automated workflows
+- Compliance and audit requirements
 
-The ETL pipeline creates a newsletter template by retrieving data from an API, formatting it, and bringing it together. Currently, the "load" step is missing.
+In this use case, you want a human to review the newsletter personalization results before sending.
 
 ## Steps
 
-### 1. Open the Code Editor
+### 1. Open the Personalize Newsletter Dag
 
-1. Go back to the **Astro IDE**
-2. Open the `create_newsletter.py` file in the code editor
+In the **Astro IDE** code editor, open the `personalize_newsletter.py` file
 
-### 2. Create the Formatted Newsletter Asset
+### 2. Import the ApprovalOperator
 
-Create a new asset called `formatted_newsletter` by adding this code to `create_newsletter.py`:
+Add the import at the top of the file:
 
 ```python
-@asset(
-    schedule=[Asset("selected_quotes")]
+from airflow.providers.standard.operators.hitl import ApprovalOperator
+```
+
+### 3. Add the HITL Operator
+
+Add this operator to your Dag after the `create_personalized_newsletter` task:
+
+```python
+approve_personalization = ApprovalOperator(
+   task_id="approve_personalization",
+   subject="Your task:",
+   body="{{ ti.xcom_pull(task_ids='create_personalized_newsletter') }}",
+   defaults="Approve", # other option: "Reject"
 )
-def formatted_newsletter(context):
-    """
-    Formats the newsletter.
-    """
-    from airflow.io.path import ObjectStoragePath
-
-    object_storage_path = ObjectStoragePath(
-       f"{OBJECT_STORAGE_SYSTEM}://{OBJECT_STORAGE_PATH_NEWSLETTER}",
-       conn_id=OBJECT_STORAGE_CONN_ID,
-    )
-
-    selected_quotes = context["ti"].xcom_pull(
-          dag_id="selected_quotes",
-          task_ids=["selected_quotes"],
-          key="return_value",
-          include_prior_dates=True,
-       )[0]
-
-    # fetch the run date of the pipeline
-    run_date = context["triggering_asset_events"][Asset("selected_quotes")][0].extra[
-       "run_date"
-    ]
-
-    newsletter_template_path = object_storage_path / "newsletter_template.txt"
-
-    newsletter_template = newsletter_template_path.read_text()
-
-    newsletter = newsletter_template.format(
-       quote_text_1=selected_quotes["short_q"]["q"],
-       quote_author_1=selected_quotes["short_q"]["a"],
-       quote_text_2=selected_quotes["median_q"]["q"],
-       quote_author_2=selected_quotes["median_q"]["a"],
-       quote_text_3=selected_quotes["long_q"]["q"],
-       quote_author_3=selected_quotes["long_q"]["a"],
-       date=run_date,
-    )
-
-    date_newsletter_path = object_storage_path / f"{run_date}_newsletter.txt"
-
-    date_newsletter_path.write_text(newsletter)
-
-    # attach the run date to the asset event
-    yield Metadata(Asset("formatted_newsletter"), {"run_date": run_date})
 ```
 
-### 3. Configure Asset Scheduling
+### 4. Update Task Dependencies
 
-The asset should be scheduled to run when the `selected_quotes` asset is available. Notice the `schedule=[Asset("selected_quotes")]` parameter in the decorator.
-
-### 4. Update Personalize Newsletter Scheduling
-
-1. Open the `personalize_newsletter.py` file
-2. The DAG is currently set to run daily, but it fails if the `formatted_newsletter` asset hasn't been updated
-3. Change the schedule to run when the right data is available:
+Modify the task dependencies to include the approval step:
 
 ```python
-schedule=[Asset("formatted_newsletter")]
+create_personalized_newsletter.expand(user=_get_weather_info) >> approve_personalization
 ```
 
-### 5. Personalize User Data
+Make sure the approval task comes after `create_personalized_newsletter` in your workflow.
 
-1. Navigate to the `include/user_data` folder
-2. Update `user_100.json` to include your own name and location
-3. **Bonus**: Try adding additional user files and see how it affects the pipeline
+### 5. Deploy Your Changes
 
-### 6. Deploy Changes
-
-1. Save all your changes
+1. Save the file
 2. Click `Sync to Test` in the upper right corner
-3. This will send your changes to the test Deployment
+3. Wait for the sync to complete
 
-::alert[Syncing may take a few minutes]{type="info"}
+### 6. Test the HITL Workflow
 
-### 7. Test the Complete Pipeline
+1. Run the `raw_zen_quotes` Dag again to trigger an end-to-end run
+2. The workflow will pause at the approval step
+3. Navigate to **Browse** → **Required Actions** in the Airflow UI
+4. Review the newsletter content and either **Approve** or **Reject** the results
 
-1. Use the **reparse dag** function in the UI for the `personalize_newsletter` dag
-2. Run your full pipeline by **materializing** the `raw_zen_quotes` DAG
-3. This should trigger all downstream assets and tasks to complete
+### 7. Explore Required Actions
 
-### 8. Verify the Asset Graph
+The **Required Actions** view provides:
+- Instance-wide view of all pending approvals
+- Easy access to review content
+- Batch approval capabilities for multiple items
 
-1. Check out your new asset graph in the Airflow UI
-2. You should see your complete ETL pipeline with three DAGs and three assets
-3. Observe how the dependencies flow through the system
+### 8. (Bonus) Change the Body
 
-## Troubleshooting
+Try to change the `body` of your `ApprovalOperator`. Change it to a multi-line-string and add Markdown as it will be rendered in the Airflow UI.
 
-::alert[The open-meteo weather API is occasionally flaky. If you get a failure in your `get_weather_info` task, let it retry - it will usually resolve.]{type="warning"}
+## Best Practices
 
-If you added additional users, you may need to implement a pool to avoid hitting API rate limits. Ask your workshop leader for help with this.
+### When to Use HITL
+
+- **Quality Control**: Review generated content before publishing
+- **Compliance**: Ensure regulatory requirements are met
+- **Business Logic**: Apply human judgment to automated decisions
+- **Exception Handling**: Manual intervention for edge cases
 
 ## Key Concepts
 
 After completing this exercise, you should understand:
 
-- How to create and configure Assets
-- The difference between asset-oriented and task-oriented DAGs  
-- How asset-based scheduling creates automatic data dependencies
-- How to pass metadata between assets using `Metadata` and `yield`
+- How to implement human approval workflows
+- The Required Actions interface for managing approvals
+- Templating in HITL operators for dynamic content
+- When and why to use human-in-the-loop patterns
 
 ## Next Steps
 
-In Module 3, you'll add human-in-the-loop functionality to create approval workflows.
+In Module 3, you'll learn about Dag versioning.
 
-::alert[Pipeline complete! Ready to add human approval workflows in Module 3?]{type="success"}
+::alert[Ready for some time travel? Let's move to the next module!]{type="success"}

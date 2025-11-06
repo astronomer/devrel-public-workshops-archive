@@ -1,152 +1,121 @@
 ---
-title: "Module 4: Run a Backfill"
+title: "Module 4: GenAI with Event-Driven Scheduling"
 weight: 40
 ---
 
-# Module 4: Run a Backfill
+# Module 4: GenAI with Event-Driven Scheduling
 
-Backfills are a first-class feature in Airflow 3, making it easy to reprocess historical data for time-dependent ETL pipelines. In this exercise, you'll create and monitor backfill operations.
+This module demonstrates a more realistic version of the newsletter pipeline using Amazon Bedrock for GenAI personalization and SQS for event-driven scheduling.
 
 ## Learning Objectives
 
-- Create backfills using the Airflow UI
-- Configure backfill parameters and date ranges
-- Monitor backfill progress and status
-- Understand downstream effects of backfill operations
-- Manage multiple approval requests from backfilled runs
+- Implement event-driven scheduling with SQS
+- Integrate GenAI capabilities using Amazon Bedrock
+- Understand real-world pipeline patterns
+- Configure AWS connections in Airflow
+
+## Prerequisites
+
+::alert[This exercise requires an AWS account with access to SQS and Amazon Bedrock]{type="warning"}
+
+You'll need:
+- AWS account with appropriate permissions
+- Access to Amazon Bedrock (may require model access requests)
+- SQS queue creation permissions
 
 ## Background
 
-For ETL pipelines that are time-dependent, you may occasionally need to reprocess historical data. Common scenarios include:
+The previous exercises used a simplified pipeline that doesn't require external connections. This exercise shows a production-ready version that:
 
-- **Data corrections**: Fixing issues in historical data
-- **New deployments**: Processing data for newly deployed pipelines  
-- **Schema changes**: Reprocessing data after pipeline modifications
-- **Recovery**: Rebuilding data after system failures
+- **Personalizes content** using Large Language Models (LLMs)
+- **Responds to events** rather than running on a schedule
+- **Integrates with AWS services** for real-world functionality
+
+This simulates an on-demand newsletter service where pipelines run as soon as users submit their preferences.
+
+## Architecture
+
+The enhanced pipeline includes:
+- **SQS Integration**: Event-driven triggers from user requests
+- **Bedrock Integration**: AI-powered content personalization
+- **Real-time Processing**: Immediate response to user input
 
 ## Steps
 
-### 1. Access the Backfill Interface
+### 1. Replace the DAG Code
 
-1. Navigate to the **DAGs** view in the Airflow UI
-2. Find the `raw_zen_quotes` DAG
-3. Click the blue **Trigger** button
-4. Select **Backfill** from the dropdown menu
+1. Navigate to `dags/personalize_newsletter.py`
+2. Replace the entire contents with the code from `solutions/personalize_newsletter_genai.py`
 
-### 2. Configure the Backfill
+### 2. Configure Environment Variables
 
-In the **Backfill** form, you'll configure:
+1. Copy the contents of `.env_example` to `.env`
+2. Update the `AIRFLOW_CONN_AWS_DEFAULT` with your AWS credentials:
 
-#### Date Range Selection
-- **Start Date**: Choose a date 2-3 days in the past
-- **End Date**: Choose yesterday's date
-- The form will show how many runs will be triggered based on your selections
+```bash
+AIRFLOW_CONN_AWS_DEFAULT=aws://YOUR_ACCESS_KEY:YOUR_SECRET_KEY@/?region_name=us-east-1
+```
 
-#### Reprocessing Behavior
-- **Clear existing runs**: Whether to clear previous task instances
-- **Reset DAG runs**: Whether to reset existing DAG run states
-- **Ignore dependencies**: Whether to ignore task dependencies
+::alert[IMPORTANT: Add the `.env` file to `.gitignore` to avoid pushing credentials to GitHub]{type="danger"}
 
-::alert[Try to select settings that will trigger exactly 2 DAG runs]{type="info"}
+### 3. Create SQS Queue
 
-### 3. Start the Backfill
+1. Log into your AWS Console
+2. Navigate to **Amazon SQS**
+3. Create a new queue (Standard queue is sufficient)
+4. Copy the queue URL
+5. Add the URL to your `.env` file:
 
-1. Review your configuration
-2. Click **Start Backfill**
-3. The system will create a backfill job and begin processing
+```bash
+SQS_QUEUE_URL=https://sqs.us-east-1.amazonaws.com/123456789012/your-queue-name
+```
 
-### 4. Monitor Backfill Progress
+### 4. Configure Bedrock Access
 
-1. Navigate back to the DAGs view
-2. Look for the **progress bar** in the UI (you may need to refresh the page)
-3. Notice how backfilled runs appear differently in the **Grid** view
-4. Observe the visual indicators that distinguish backfill runs from regular runs
+1. In AWS Console, navigate to **Amazon Bedrock**
+2. Go to **Model access** in the left sidebar
+3. Request access to a model (e.g., Claude or Titan models)
+4. Wait for approval (this may take a few minutes)
 
-### 5. Observe Downstream Effects
+### 5. Restart Airflow
 
-Pay attention to what happens with other DAGs:
+Restart your Airflow test deployment to load the new environment variables
 
-1. Were downstream DAGs (`selected_quotes`, `personalize_newsletter`) triggered automatically?
-2. How does asset-based scheduling handle backfilled data?
-3. What's the impact on the overall pipeline?
+### 6. Test Event-Driven Scheduling
 
-### 6. Handle Multiple Approvals
+1. Navigate to your SQS queue in the AWS Console
+2. Send a message with this JSON format:
 
-With the HITL operator from Exercise 3, you'll have multiple approval requests:
+```json
+{
+  "id": 300,
+  "name": "Your Name",
+  "location": "Your City",
+  "motivation": "Your motivational theme",
+  "favorite_sci_fi_character": "Your favorite character"
+}
+```
 
-1. Navigate to **Browse** → **Required Actions**
-2. You'll see multiple pending approvals from the backfilled runs
-3. Try the **instance-wide view** for managing multiple approvals efficiently
-4. You can approve/reject items individually or in batches
+3. The `personalize_newsletter` DAG should automatically start running
+4. Monitor the DAG execution in the Airflow UI
 
-## Understanding Backfill Behavior
+### 7. Review Results
 
-### Backfill vs Regular Runs
-
-**Visual Differences:**
-- Backfilled runs have special indicators in the Grid view
-- Progress bars show backfill completion status
-- Run metadata indicates backfill source
-
-**Execution Differences:**
-- Backfills respect DAG scheduling and dependencies
-- Asset events are generated for each backfilled run
-- Downstream DAGs are triggered based on asset updates
-
-### Backfill Configuration Options
-
-#### Date Range Options
-- **Specific dates**: Target exact date ranges
-- **Relative dates**: Use relative time periods
-- **Schedule intervals**: Respect DAG scheduling intervals
-
-#### Processing Options
-- **Parallel execution**: Run multiple date ranges simultaneously
-- **Sequential execution**: Process dates one at a time
-- **Dependency handling**: Include or ignore task dependencies
-
-## Best Practices
-
-### When to Use Backfills
-
-1. **Historical data processing**: Process data for past periods
-2. **Pipeline testing**: Validate changes against historical data
-3. **Data recovery**: Rebuild missing or corrupted data
-4. **Compliance**: Ensure complete data coverage for audits
-
-### Backfill Planning
-
-1. **Resource consideration**: Ensure sufficient compute resources
-2. **Dependency mapping**: Understand downstream impacts
-3. **Approval workflows**: Plan for manual intervention points
-4. **Monitoring**: Set up alerts for backfill completion/failures
-
-## Troubleshooting
-
-### Common Issues
-
-- **Resource constraints**: Backfills may consume significant resources
-- **Dependency conflicts**: Existing runs may conflict with backfill logic
-- **Approval bottlenecks**: Multiple HITL tasks require attention
-
-### Solutions
-
-- **Resource management**: Use pools to limit concurrent tasks
-- **Clear existing runs**: Use backfill options to handle conflicts
-- **Batch approvals**: Use instance-wide Required Actions view
+1. Check the DAG execution logs
+2. Review your personalized newsletter in the `include/newsletters` folder
+3. Notice how the GenAI integration creates more sophisticated personalization
 
 ## Key Concepts
 
 After completing this exercise, you should understand:
 
-- How to create and configure backfill operations
-- The difference between backfilled and regular DAG runs
-- How backfills interact with asset-based scheduling
-- Managing multiple approval workflows efficiently
-- Best practices for backfill planning and execution
+- How to implement event-driven scheduling with SQS
+- Integration patterns for GenAI services like Bedrock
+- Real-world considerations for production pipelines
+- The difference between scheduled and event-driven workflows
 
 ## Next Steps
 
-In Module 5, you'll explore DAG versioning to track changes over time.
+This exercise demonstrates advanced Airflow 3 patterns that you can apply to real-world scenarios. Consider how these patterns might apply to your own use cases.
 
-::alert[Backfill complete! Ready to explore DAG versioning in Module 5?]{type="success"}
+::alert[Module complete! You've now experienced the full power of Airflow 3's new features.]{type="success"}

@@ -27,14 +27,6 @@ The final preparation step is to setup a **free** trial of Astro to run Airflow 
 
    ![Test deployment details](/static/img/deployment-change-1.png)
 
-In the Deployment, you need to perform 2 changes:
-
-   - Update the minimum workers by going to the `Details` tab, then `Execution` and click `Edit`.
-   ![Execution](/static/img/deployment-change-2.png)
-
-   Set `Min # Workers` to 0, and click `Update Deployment`.
-   ![Min workers](/static/img/deployment-change-3.png)
-
    - Go to the `Environment` tab, click `Edit Deployment Variables`, and delete the `AIRFLOW__SCHEDULER__USE_JOB_SCHEDULE` variable.
 
    ![Env var](/static/img/deployment-change-4.png)

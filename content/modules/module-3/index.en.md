@@ -1,145 +1,64 @@
 ---
-title: "Module 3: Add Human-in-the-Loop"
+title: "Module 3: Use Dag Versioning"
 weight: 30
 ---
 
-# Module 3: Add Human-in-the-Loop
+# Module 3: Use Dag Versioning
 
-Airflow 3.1 introduced human-in-the-loop (HITL) operators, allowing manual intervention in automated workflows. In this exercise, you'll add an approval step for newsletter personalization.
+Dag versioning is a new feature in Airflow 3 that tracks changes to your Dag code over time. In this exercise, you'll explore how versioning works and compare different versions of your Dags.
 
 ## Learning Objectives
 
-- Implement Human-in-the-Loop operators
-- Create approval/rejection workflows
-- Understand manual intervention patterns in automated pipelines
-- Navigate the Required Actions interface
-
-## Background
-
-Human-in-the-loop workflows are essential when you need:
-- Manual review and approval processes
-- Quality control checkpoints
-- Business decision points in automated workflows
-- Compliance and audit requirements
-
-In this use case, you want a human to review the newsletter personalization results before sending.
+- Understand Dag versioning with `LocalDagBundle`
+- Navigate between different Dag versions in the UI
+- Compare structural and code changes across versions
+- Understand when new versions are created
 
 ## Steps
 
-### 1. Open the Personalize Newsletter DAG
+### 1. Access Dag Versioning
 
-1. In the **Astro IDE** code editor, open the `personalize_newsletter.py` file
-2. Locate the `create_personalized_newsletter` task
+1. Navigate to the **Dags** view in the Airflow UI
+2. Click on the `personalize_newsletter` Dag
+3. Go to the **Graph** view
+4. Click on **Options** in the top menu
+5. Notice the **Dag Version** dropdown
 
-### 2. Import the ApprovalOperator
+### 2. Explore Version History
 
-Add the import at the top of the file:
+1. Check how many versions are available in the dropdown
+2. You should see multiple versions from the changes made in the previous module
 
-```python
-from airflow.operators.approval import ApprovalOperator
-```
+::expand[Why do you have multiple versions?]{header="💡 Think About It"}
+Each time you modified the Dag structure (adding the HITL operator), Airflow created a new version to track these changes. But only, if a Dag run is between the changes.
+::
 
-### 3. Add the HITL Operator
+### 3. Compare Graph Versions
 
-Add this operator to your DAG after the `create_personalized_newsletter` task:
+1. Toggle between different versions using the dropdown
+2. Observe the changes in the **Graph** view:
+   - **Version 1**: Original Dag structure
+   - **Version 2**: After adding the HITL operator
 
-```python
-approve_personalization = ApprovalOperator(
-   task_id="approve_personalization",
-   subject="Your task:",
-   body="{{ ti.xcom_pull(task_ids='create_personalized_newsletter') }}",
-   defaults="Approve", # other option: "Reject"
-)
-```
+3. Notice how the graph visualization changes with each version
 
-### 4. Update Task Dependencies
+### 4. Compare Code Versions
 
-Modify the task dependencies to include the approval step:
-
-```python
-# Add this line to set up the dependency
-create_personalized_newsletter >> approve_personalization
-```
-
-Make sure the approval task comes after `create_personalized_newsletter` in your workflow.
-
-### 5. Deploy Your Changes
-
-1. Save the file
-2. Click `Sync to Test` in the upper right corner
-3. Wait for the sync to complete
-
-::alert[Syncing may take a few minutes]{type="info"}
-
-### 6. Test the HITL Workflow
-
-1. Run the `personalize_newsletter` DAG again
-2. The workflow will pause at the approval step
-3. Navigate to **Browse** → **Required Actions** in the Airflow UI
-4. Review the newsletter content and either **Approve** or **Reject** the results
-
-### 7. Explore Required Actions
-
-The **Required Actions** view provides:
-- Instance-wide view of all pending approvals
-- Easy access to review content
-- Batch approval capabilities for multiple items
-
-## Understanding HITL Operators
-
-### ApprovalOperator Parameters
-
-- **task_id**: Unique identifier for the task
-- **subject**: Brief description of what needs approval
-- **body**: Content to review (can use Jinja templating)
-- **defaults**: Default action ("Approve" or "Reject")
-
-### Templating in HITL
-
-The `body` parameter supports Jinja templating, allowing you to:
-- Pull XCom values from previous tasks
-- Include dynamic content based on execution context
-- Format data for human review
-
-Example:
-```python
-body="{{ ti.xcom_pull(task_ids='create_personalized_newsletter') }}"
-```
-
-## Best Practices
-
-### When to Use HITL
-
-- **Quality Control**: Review generated content before publishing
-- **Compliance**: Ensure regulatory requirements are met
-- **Business Logic**: Apply human judgment to automated decisions
-- **Exception Handling**: Manual intervention for edge cases
-
-### HITL Design Patterns
-
-1. **Sequential Approval**: Single approval point in workflow
-2. **Parallel Review**: Multiple reviewers for the same content
-3. **Escalation**: Different approval levels based on criteria
-4. **Conditional Approval**: Approval only under certain conditions
-
-## Troubleshooting
-
-If you don't see the Required Actions:
-1. Ensure the DAG has run and reached the approval task
-2. Check that the task is in a "waiting for approval" state
-3. Refresh the Airflow UI
+1. Navigate to the **Code** tab
+2. Use the version dropdown to toggle between different versions
+3. Observe the code differences
 
 ## Key Concepts
 
 After completing this exercise, you should understand:
 
-- How to implement human approval workflows
-- The Required Actions interface for managing approvals
-- Templating in HITL operators for dynamic content
-- When and why to use human-in-the-loop patterns
+- How Dag versioning automatically tracks structural changes
+- The difference between structural and code-only changes
+- How to navigate and compare different Dag versions
+- When and why new versions are created
 
 ## Next Steps
 
-In Module 4, you'll learn about backfills to reprocess historical data.
+In the next module, you'll explore advanced event-driven scheduling with GenAI integration.
 
-::alert[Approval workflow complete! Ready to learn about backfills in Module 4?]{type="success"}
+::alert[Versioning mastered! Ready for integrating Amazon SQS and Amazon Bedrock?]{type="success"}
