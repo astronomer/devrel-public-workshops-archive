@@ -7,58 +7,38 @@ weight: 10
 
 This workshop demonstrates Airflow 3's capabilities through building a **personalized newsletter system** that showcases modern data orchestration patterns.
 
+![Demo architecture diagram](/static/img/etl_genai_newsletter_architecture_diagram_bedrock.png)
+
 ## Workshop Use Case
 
-### Automated Newsletter Generation
-Create an end-to-end pipeline that:
-- Retrieves motivational quotes from external APIs
-- Processes and selects the best content
-- Generates personalized newsletters based on user preferences
-- Includes weather information for user locations
-- Applies human approval workflows before delivery
+The use case for this workshop is using Airflow to create an automated and personalized newsletter. The end-to-end solution includes two different processes, interacting via assets:
 
-### Real-World Applications
-This pattern applies to:
-- **Content Management**: Automated content generation and curation
-- **Marketing Automation**: Personalized campaign creation
-- **Data Processing**: ETL pipelines with human oversight
-- **AI/ML Workflows**: Model inference with approval gates
-
-## System Architecture
-
-![Architecture Diagram](/static/img/etl_genai_newsletter_architecture_diagram_bedrock.png)
-
-### Core Components
-
-#### 1. ETL Pipeline (Asset-Oriented)
-- **Raw Data Extraction**: Fetch quotes from ZenQuotes API
-- **Data Transformation**: Select and format optimal content
-- **Template Generation**: Create newsletter templates
-
-#### 2. Personalization Pipeline (Task-Oriented)
-- **User Data Processing**: Load individual user preferences
-- **Weather Integration**: Fetch location-based weather data
-- **Content Assembly**: Generate personalized newsletters
-
-#### 3. Advanced Features
-- **Human-in-the-Loop**: Manual approval workflows
-- **Event-Driven Processing**: SQS-triggered execution
-- **GenAI Integration**: AI-powered content personalization
-
-### Data Flow
-
-1. **Scheduled Extraction**: Daily quote retrieval from external API
-2. **Asset-Based Triggering**: Downstream processing triggered by data availability
-3. **Personalization**: User-specific content generation
-4. **Approval Workflow**: Human review before final delivery
-5. **Event Processing**: Real-time response to user requests (optional)
+1. The `create_newsletter` process retrieves quotes from the ZenQuotes API, and prepares a newsletter based on a template. It consists of three `@asset` decorated functions, which means, three Dags with a single task each implementing the business logic, communicating via assets. You will learn more about assets while exploring this documentation.
+2. The `personalize_newsletter` pipeline personalizes the newsletter based on user input. It's a task-oriented pipeline, which is taking the user's location, and the reader's favorite sci-fi character into account. This is used with a LLM through Amazon Bedrock to write content in the voice/style of the sci-fi character they chose.
 
 ## Airflow 3 Features Demonstrated
 
 ### Assets (Data-Aware Scheduling)
-- Replace traditional dataset dependencies
-- Automatic DAG generation for data assets
-- Improved data lineage and dependency management
+An [asset](https://www.astronomer.io/docs/learn/airflow-datasets) is a logical representation of data, such as a table, model, or file, or exists only as a made-up construct to have an object to define cross-Dag dependencies. It's used to establish dependencies between pipelines. Assets can be explicitly defined (⁠`Asset("name")`) or implicitly referenced (when using ⁠`@asset`, the function itself is the asset reference). Both refer to the same underlying asset and can be used interchangeably in task ⁠outlets or ⁠schedule parameters. Assets enable cross-Dag dependencies without sensors, make data lineage visible in the Airflow UI, and work across both imperative and declarative authoring approaches.
+
+An **asset event** is a record that indicates an asset has been updated, created automatically when an asset producing function finishes successfully. These events are what actually trigger downstream consumer Dags that are scheduled on those assets, and they can optionally contain extra metadata about the update. You can create these events also via the API or directly within the Airflow UI, with or without materializing the asset.
+
+**Materialize** means to run the underlying function that produces and updates an asset. When you materialize an asset, you're executing the code that generates or updates the data that asset represents.
+
+The `@asset` decorator is a **declarative shorthand that creates a complete Dag with a single task and one asset** in one function declaration (use `@asset.multi` for multiple assets).
+
+```py
+@asset(schedule="@daily")
+def raw_zen_quotes():
+    """
+    Extracts a random set of quotes.
+    """
+    import requests
+    r = requests.get("https://zenquotes.io/api/quotes/random")
+    return r.json()
+```
+
+This asset-oriented approach puts the data asset front and center, automatically generating the Dag structure, task definition, and asset production with minimal boilerplate code.
 
 ### Enhanced UI
 - React-based interface with improved navigation
@@ -71,7 +51,7 @@ This pattern applies to:
 - Batch processing of approval requests
 
 ### Built-in Backfills
-- UI-driven historical data processing
+- UI-driven historical data processing (can also be triggered via API and CLI)
 - Progress tracking and monitoring
 - Flexible reprocessing options
 
@@ -88,36 +68,16 @@ This pattern applies to:
 ## Technology Stack
 
 ### Core Platform
-- **Apache Airflow 3.0**: Latest workflow orchestration features
-- **Astronomer Astro**: Managed Airflow platform
+- **Apache Airflow 3**: Latest workflow orchestration features
+- **Astro IDE**: Author, test, and release production-ready DAGs from your browser
+- **Astro**: Managed Airflow platform
 - **Python**: Primary development language
+- **Git**: Version control and collaboration
 
 ### External Integrations
 - **ZenQuotes API**: Motivational quote source
 - **Open-Meteo API**: Weather data provider
-- **Amazon SQS**: Event-driven messaging (optional)
-- **Amazon Bedrock**: GenAI capabilities (optional)
-
-### Development Tools
-- **Astro IDE**: Cloud-based development environment
-- **Astro CLI**: Local development and deployment
-- **Git**: Version control and collaboration
-
-## Learning Progression
-
-### Foundation (Exercises 1-2)
-- UI exploration and navigation
-- Asset creation and scheduling
-- Basic pipeline construction
-
-### Intermediate (Exercises 3-4)
-- Human workflow integration
-- Historical data processing
-- Operational management
-
-### Advanced (Exercises 5-6)
-- Change tracking and versioning
-- Event-driven architectures
-- AI/ML integration patterns
+- **Amazon SQS**: Event-driven messaging
+- **Amazon Bedrock**: GenAI capabilities
 
 This architecture provides a comprehensive foundation for understanding modern data orchestration while demonstrating practical, real-world applications of Airflow 3's enhanced capabilities.

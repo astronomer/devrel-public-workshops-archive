@@ -29,17 +29,20 @@ infrastructure:
       label: astro-airflow-workshop
 
 additionalLinks:
-  - title: "Astronomer Documentation"
+  - title: "Astronomer Airflow Docs"
     link: "https://www.astronomer.io/docs/"
+  - title: "Astronomer Learn Guides for Airflow"
+    link: "https://www.astronomer.io/docs/learn"
   - title: "Apache Airflow Documentation"
     link: "https://airflow.apache.org/docs/"
 
 params:
-  workshopTitle: "Discover Airflow 3 Workshop"
-  duration: "3-4 hours"
+  workshopTitle: "Play Astro"
+  duration: "1-2 hours"
   level: "200"
   services:
     - "Apache Airflow"
     - "Astronomer"
+    - "Astro IDE"
     - "Amazon SQS"
     - "Amazon Bedrock"

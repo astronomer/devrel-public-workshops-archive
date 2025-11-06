@@ -24,7 +24,7 @@ Astro is a fully managed Apache Airflow service that removes the complexity of r
 ### Astro IDE
 - Cloud-based development environment
 - Integrated code editor with Airflow-specific features
-- Real-time DAG validation and testing
+- Real-time Dag validation and testing
 - Seamless deployment to Airflow environments
 
 ### Astro Runtime
@@ -60,7 +60,7 @@ Astro is a fully managed Apache Airflow service that removes the complexity of r
 
 In this workshop, you'll use Astro's free trial to:
 1. Create a cloud-based Airflow environment
-2. Develop DAGs using the Astro IDE
+2. Develop Dags using the Astro IDE
 3. Deploy and run workflows in a managed environment
 4. Explore Airflow 3's new features hands-on
 
