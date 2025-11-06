@@ -1,11 +1,13 @@
 ---
-title: "Module 4: GenAI with Event-Driven Scheduling"
+title: "Module 4: GenAI, Event-Driven Scheduling, and Some Sci-Fi"
 weight: 40
 ---
 
-# Module 4: GenAI with Event-Driven Scheduling
+# Module 4: GenAI, Event-Driven Scheduling, and Some Sci-Fi
 
 This module demonstrates a more realistic version of the newsletter pipeline using Amazon Bedrock for GenAI personalization and SQS for event-driven scheduling.
+
+We will also spice up the newsletter by using the user's favorite sci-fi character.
 
 ## Learning Objectives
 
@@ -42,7 +44,7 @@ The enhanced pipeline includes:
 
 ## Steps
 
-### 1. Replace the DAG Code
+### 1. Replace the Dag Code
 
 1. Navigate to `dags/personalize_newsletter.py`
 2. Replace the entire contents with the code from `solutions/personalize_newsletter_genai.py`
@@ -96,14 +98,18 @@ Restart your Airflow test deployment to load the new environment variables
 }
 ```
 
-3. The `personalize_newsletter` DAG should automatically start running
-4. Monitor the DAG execution in the Airflow UI
+3. The `personalize_newsletter` Dag should automatically start running
+4. Monitor the Dag execution in the Airflow UI
 
 ### 7. Review Results
 
-1. Check the DAG execution logs
+1. Check the Dag execution logs
 2. Review your personalized newsletter in the `include/newsletters` folder
 3. Notice how the GenAI integration creates more sophisticated personalization
+
+### 8. (Bonus) Adjust the Prompt
+
+Notice how the prompt in the code uses the user's favorite sci‑fi character? Have some fun—adjust the prompt and see how unique a newsletter you can create.
 
 ## Key Concepts
 
