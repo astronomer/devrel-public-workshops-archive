@@ -17,16 +17,25 @@ The final preparation step is to setup a **free** trial of Astro to run Airflow 
 
    - You should now see the UI of the Astro platform. Leave it for now, we'll come back to it in a few steps.
 
-2. Install the free [Astro CLI](https://www.astronomer.io/docs/astro/cli/install-cli).
-3. [Fork this repository](https://github.com/astronomer/devrel-public-workshops/fork). Make sure you uncheck the `Copy the main branch only` option when forking.
+2. Open the _Astro IDE_ and select _Connect Git project..._
 
-   ![Forking the repository](img/fork_repo.png)
+   ![Connect Git project in Astro IDE](img/astro-ide-setup-1.png)
 
-4. Clone your fork. Get the URL by clicking on Code -> Copy to clipboard. Then run `git clone <url>`.
-5. Open the repo folder (`cd devrel-public-workshops`), and run `git checkout airflow-3-reinvent` to switch to the re:Invent branch.
-6. Ensure you are authenticated to your Astro trial by running `astro login` in your terminal. It will prompt you to go to your browser to sign in.
-7. Export your project to the Astro IDE by running `astro ide project export` in your terminal. Choose `y` to create a new project, and give your project a name when prompted. Your new Astro IDE project should automatically open in a browser.
-8. To start Airflow, click the `Start test deployment` button. This will create a small Airflow Deployment for you to run your dags. It may take a few minutes to spin up.
+3. Under _Select a Git provider for manual configuration_ select _GitHub_ and enter the following details:
+
+   - **ACCOUNT**: `astronomer`
+   - **REPOSITORY**: `devrel-public-workshops`
+   - _Keep Astro Project Path empty_
+   - **BRANCH**: `airflow-3-reinvent`
+   - **AUTHENTICATION TYPE**: `None (public repository)`
+   - Click on _Connect_, the IDE will import and open the project for you
+
+   ![Import public GitHub repository](img/astro-ide-setup-2.png)
+
+8. To start Airflow, click the `Start Test Deployment` button. This will create a small Airflow Deployment for you to run your dags. It may take a few minutes to spin up.
+
+   ![Start Test Deployment](img/astro-ide-setup-3.png)
+
 9. To enable scheduled dag runs in your new Airflow Deployment, click on the drop down next to `Sync to test`, and click `Test Deployment Details`.
 
    ![Test deployment details](img/deployment-change-1.png)

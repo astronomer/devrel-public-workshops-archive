@@ -20,36 +20,13 @@ In this hands-on workshop, you'll build an automated personalized newsletter sys
 
 Astro is a fully managed Apache Airflow service that removes the complexity of running Airflow infrastructure while providing enterprise-grade features for data teams.
 
-### Key benefits
+## Key benefits
 
 - **Fully managed**: No infrastructure management required
 - **Enterprise security**: SOC 2 Type II certified with advanced security features
 - **Scalable**: Auto-scaling workers and flexible resource allocation
 - **Developer experience**: Enhanced IDE, CI/CD integration, and debugging tools
 - **Observability**: Advanced monitoring, alerting, and lineage tracking
-
-## Astro platform components
-
-### Astro IDE
-
-- Cloud-based development environment
-- Integrated code editor with Airflow-specific features
-- Real-time Dag validation and testing
-- Seamless deployment to Airflow environments
-
-### Astro Runtime
-
-- Certified Apache Airflow distribution
-- Enhanced with additional operators and features
-- Regular security updates and patches
-- Optimized performance and reliability
-
-### Astro CLI
-
-- Command-line interface for local development
-- Project scaffolding and management
-- Local Airflow testing capabilities
-- Deployment automation
 
 # Use case and architecture
 
@@ -164,8 +141,6 @@ Before starting this workshop, please ensure you have the following prerequisite
 ### Technical background
 
 - **Basic Python programming**: Understanding of Python syntax, functions, and basic data structures
-- **Command line familiarity**: Comfortable using terminal/command prompt for basic operations
-- **Git basics**: Understanding of git clone, checkout, and basic version control concepts
 
 ### Apache Airflow concepts
 
@@ -209,7 +184,6 @@ Before starting this workshop, please ensure you have the following prerequisite
 
 - **Modern web browser**: Chrome, Firefox, Safari, or Edge (latest versions)
 - **Stable internet connection**: Required for accessing cloud services and APIs
-- **Local terminal access**: Command line interface for running CLI commands
 
 ### AWS account requirements
 
@@ -227,8 +201,6 @@ Before starting this workshop, please ensure you have the following prerequisite
 
 ### Required software
 
-- **Astro CLI**: Will be installed following provided instructions
-- **Git**: For cloning the workshop repository
 - **Web browser**: For accessing Astro IDE and Airflow UI
 
 ## Ready to begin?
