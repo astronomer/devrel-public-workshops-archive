@@ -5,21 +5,25 @@ Have fun 🍻!
 
 # Module 0: Astro and Astro IDE
 
-The final preparation step is to setup a **free** trial of Astro to run Airflow and the Astro IDE to write Dags. It is not necessary to understand all details of the Astro platform, but in a nutshell: Each customer has a dedicated Organization on Astro. One Organization can have multiple Workspaces (e.g. per team). A Workspace is a collection of Deployments. Each Workspace can have multiple Deployments. A Deployment is an Airflow environment hosted on Astro.
+The final preparation step is to setup a **free** trial of Astro to run Airflow and the Astro IDE to write Dags. It is not necessary to understand all details of the Astro platform, but in a nutshell: Each customer has a dedicated Organization on Astro. One Organization can have multiple Workspaces (e.g. per team). Each Workspace can have multiple Deployments. A Deployment is an Airflow environment hosted on Astro.
 
 1. Create a [free trial of Astro](https://www.astronomer.io/lp/signup/?utm_source=conference&utm_medium=web&utm_campaign=reinvent-25).
-   - After creating an account and logging in, choose `Start a Free Astro Trial` (click link Create Organization)
-   - When being asked how you want to use Astro, choose Personal
-   - Choose an Organization name and a Workspace name
-   - When asked to select a template, click `None`. Leave all other settings and click `Create Deployment in Astro`. Note that you will not need this Deployment for this workshop, but you can use it for the remaining duration of your trial.
+
+   - After creating an account, verifying your email and logging in, choose _Personal_ in the first step.
+   - Then, choose an _Organization_ and _Workspace_ name in the second step. Can be fictional names and you will be able to change them later.
+   - In the third step, click the small link at the bottom under the two boxes, saying _Or skip this and go to your workspace_.
+
+   ![Create an empty environment](img/trial-setup.png)
+
    - You should now see the UI of the Astro platform. Leave it for now, we'll come back to it in a few steps.
+
 2. Install the free [Astro CLI](https://www.astronomer.io/docs/astro/cli/install-cli).
 3. [Fork this repository](https://github.com/astronomer/devrel-public-workshops/fork). Make sure you uncheck the `Copy the main branch only` option when forking.
 
    ![Forking the repository](img/fork_repo.png)
 
 4. Clone your fork. Get the URL by clicking on Code -> Copy to clipboard. Then run `git clone <url>`.
-5. Run `git checkout airflow-3-reinvent` to switch to the airflow 3 branch.
+5. Open the repo folder (`cd devrel-public-workshops`), and run `git checkout airflow-3-reinvent` to switch to the re:Invent branch.
 6. Ensure you are authenticated to your Astro trial by running `astro login` in your terminal. It will prompt you to go to your browser to sign in.
 7. Export your project to the Astro IDE by running `astro ide project export` in your terminal. Choose `y` to create a new project, and give your project a name when prompted. Your new Astro IDE project should automatically open in a browser.
 8. To start Airflow, click the `Start test deployment` button. This will create a small Airflow Deployment for you to run your dags. It may take a few minutes to spin up.
@@ -31,7 +35,7 @@ The final preparation step is to setup a **free** trial of Astro to run Airflow 
 
    ![Env var](img/deployment-change-4.png)
 
-10. Go back to the Astro IDE, and in the drop down next to `Sync to Test`, click on `Open Airflow`.
+10. Go back to the Astro IDE. Do this, by switching back to the first browser tab. **Avoid opening the Astro IDE via the navigation, as that would start a new IDE session**! Then, in the drop down next to _Sync to Test_, click on _Open Airflow_.
 
 > [!NOTE]
 > Environment ready! Proceed to the modules to start exploring Airflow.
@@ -53,7 +57,7 @@ Airflow 3 has a completely refreshed UI that is React-based and easier to naviga
 > You will see 4 Dags in this view, all of them already activated. Compare those to the architecture diagram to get a better understanding of the functionality.
 
 2. Check the schedule column and identify which Dag is triggered time-based, and which Dags are triggered asset-aware
-3. Open the **Assets** view to understand data dependencies
+3. Open the **Assets** view via the main navigation
 
 > [!IMPORTANT]
 > You will see 4 assets in this view. These are updated via the Dags you saw before.
@@ -62,7 +66,7 @@ Airflow 3 has a completely refreshed UI that is React-based and easier to naviga
 
 ## 3. Run Dags
 
-1. **Run** the `raw_zen_quotes` Dag
+1. **Run** the `raw_zen_quotes` DAG from the _Dags view_ by clicking the _play_ button next to it. Keep the default options and click _Trigger_.
 2. Observe how all Dags are being triggered via their asset dependencies
 3. Once all Dags finished successfully, open each Dag one by one, and open the recent run by clicking the bar in the grid view on the left or by clicking the latest run in the Runs tab
 
@@ -71,12 +75,14 @@ Airflow 3 has a completely refreshed UI that is React-based and easier to naviga
 4. Within the Dag runs, click on the tasks to see the logs
 5. Specifically, check the task logs for the `create_personalized_newsletter` task in the `personalize_newsletter` Dag, it should show the generated newsletter
 
+   ![Task logs showing the generated newsletter](img/newsletter-task-logs.png)
+
 ## 4. Explore UI features
 
 Try out these new UI features:
 
-1. **Switch themes**: Toggle between light mode and dark mode 😎
-2. **Change language**: Try a different language from the `User` menu
+1. **Switch themes**: Toggle between light mode and dark mode from the _User_ menu 😎
+2. **Change language**: Try a different language, also from the _User_ menu
 3. **Navigation**: Notice how easy it is to navigate between different views
 
 ## 5. (Bonus) Trigger via asset events
