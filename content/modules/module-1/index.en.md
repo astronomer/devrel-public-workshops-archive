@@ -49,7 +49,7 @@ The new UI provides improved navigation, better performance, and enhanced visual
 4. Within the Dag runs, click on the tasks to see the logs
 5. Specifically, check the task logs for the `create_personalized_newsletter` task in the `personalize_newsletter` Dag, it should show the generated newsletter
 
-### 6. Explore UI Features
+### 4. Explore UI Features
 
 Try out these new UI features:
 
@@ -57,7 +57,7 @@ Try out these new UI features:
 2. **Change language**: Try a different language from the `User` menu
 3. **Navigation**: Notice how easy it is to navigate between different views
 
-### 7. (Bonus) Trigger via Asset Events
+### 5. (Bonus) Trigger via Asset Events
 
 Let us assume the `raw_zen_quotes` Dag takes a long time to finish, and we don't want to wait for it. In this case, we can also generate asset update events in the Airflow UI, without running the underlying function (materializing).
 
