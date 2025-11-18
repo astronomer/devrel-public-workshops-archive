@@ -165,6 +165,9 @@ Dag versioning is a new feature in Airflow 3 that tracks changes to your Dag cod
 1. Navigate to the **Dags** view in the Airflow UI
 2. Click on the `personalize_newsletter` Dag
 3. Go to the **Graph** view
+
+   ![Toggle graph view](img/toggle-graph-view.png)
+
 4. Click on **Options** in the top menu
 5. Notice the **Dag Version** dropdown
 6. Check how many versions are available in the dropdown, you should see multiple versions from the changes made in the previous module
