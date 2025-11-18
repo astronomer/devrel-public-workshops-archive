@@ -15,9 +15,9 @@ The final preparation step is to setup a **free** trial of Astro to run Airflow 
 
    ![Create an empty environment](img/trial-setup.png)
 
-   - You should now see the UI of the Astro platform. Leave it for now, we'll come back to it in a few steps.
+   - You should now see the UI of the Astro platform.
 
-2. Open the _Astro IDE_ and select _Connect Git project..._
+2. Open the _Astro IDE_ from the navigation on the left, and select _Connect Git project..._
 
    ![Connect Git project in Astro IDE](img/astro-ide-setup-1.png)
 
@@ -32,11 +32,11 @@ The final preparation step is to setup a **free** trial of Astro to run Airflow 
 
    ![Import public GitHub repository](img/astro-ide-setup-2.png)
 
-8. To start Airflow, click the `Start Test Deployment` button. This will create a small Airflow Deployment for you to run your dags. It may take a few minutes to spin up.
+4. To start Airflow, click the `Start Test Deployment` button. This will create a small Airflow Deployment for you to run your dags. It may take a few minutes to spin up.
 
    ![Start Test Deployment](img/astro-ide-setup-3.png)
 
-9. To enable scheduled dag runs in your new Airflow Deployment, click on the drop down next to `Sync to test`, and click `Test Deployment Details`.
+5. To enable scheduled dag runs in your new Airflow Deployment, click on the drop down next to `Sync to test`, and click `Test Deployment Details`.
 
    ![Test deployment details](img/deployment-change-1.png)
 
@@ -44,7 +44,7 @@ The final preparation step is to setup a **free** trial of Astro to run Airflow 
 
    ![Env var](img/deployment-change-4.png)
 
-10. Go back to the Astro IDE. Do this, by switching back to the first browser tab. **Avoid opening the Astro IDE via the navigation, as that would start a new IDE session**! Then, in the drop down next to _Sync to Test_, click on _Open Airflow_.
+6. Go back to the Astro IDE. Do this, by switching back to the first browser tab. **Avoid opening the Astro IDE via the navigation, as that would start a new IDE session**! Then, in the drop down next to _Sync to Test_, click on _Open Airflow_.
 
 > [!NOTE]
 > Environment ready! Proceed to the modules to start exploring Airflow.
