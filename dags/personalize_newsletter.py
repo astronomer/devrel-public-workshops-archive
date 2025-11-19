@@ -1,7 +1,7 @@
 import os
 
-from airflow.sdk import Asset, dag, task
-from pendulum import datetime
+from airflow.sdk import Asset, dag, task, ObjectStoragePath
+from pendulum import datetime, duration
 
 _WEATHER_URL = (
     "https://api.open-meteo.com/v1/forecast?"
@@ -31,7 +31,6 @@ def _get_lat_long(location):
     Note that this version of the function caches the geocoding
     """
     import time
-    from airflow.sdk import ObjectStoragePath
     from geopy.geocoders import Nominatim
     import json
 
@@ -61,10 +60,6 @@ def _get_lat_long(location):
     return coordinates
 
 
-from pendulum import datetime, duration
-from airflow.sdk import dag
-
-
 @dag(
     start_date=datetime(2025, 9, 1),
     schedule=(Asset("formatted_newsletter")),
@@ -77,8 +72,6 @@ def personalize_newsletter():
     @task
     def get_user_info() -> list[dict]:
         import json
-
-        from airflow.sdk import ObjectStoragePath
 
         object_storage_path = ObjectStoragePath(
             f"{OBJECT_STORAGE_SYSTEM}://" f"{OBJECT_STORAGE_PATH_USER_INFO}",
