@@ -43,7 +43,7 @@ def _get_lat_long(location):
 
     locations_data = json.loads(locations_file.read_text())
 
-    if location in locations_data.keys():
+    if location in locations_data:
         return tuple(locations_data[location])
 
     time.sleep(10)
