@@ -4,7 +4,7 @@ from airflow.providers.common.messaging.triggers.msg_queue import MessageQueueTr
 from airflow.sdk import dag, Asset, task, ObjectStoragePath, AssetWatcher
 from pendulum import datetime, duration
 
-from include.utils import process_asset_event, get_run_date
+from include.utils import extract_user_info_from_asset_extra, get_run_date
 
 _WEATHER_URL = (
     "https://api.open-meteo.com/v1/forecast?"
@@ -88,11 +88,12 @@ def personalize_newsletter_genai():
             asset_extra = asset_event.extra
 
             print("The triggering asset event is: ", asset_event_name)
+            print("Asset event: ", asset_event)
 
         if asset_event_name == "sqs_queue_asset":
             print("Triggered by SQS queue asset...")
             print("Processing the message from the SQS queue: ", asset_extra)
-            user_info = process_asset_event(asset_extra)
+            user_info = extract_user_info_from_asset_extra(asset_extra)
 
         else:
             print("Triggered by formatted_newsletter asset...")
