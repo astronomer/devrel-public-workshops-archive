@@ -1,7 +1,7 @@
 import os
 
-from airflow.sdk import Asset, dag, task, ObjectStoragePath
 from airflow.providers.standard.operators.hitl import ApprovalOperator
+from airflow.sdk import Asset, dag, task, ObjectStoragePath
 from pendulum import datetime, duration
 
 _WEATHER_URL = (
