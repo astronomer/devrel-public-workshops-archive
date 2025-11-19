@@ -35,7 +35,7 @@ def _get_lat_long(location):
     import json
 
     locations_file = ObjectStoragePath(
-        f"{OBJECT_STORAGE_SYSTEM}://" f"{OBJECT_STORAGE_LOCATIONS_FILE}",
+        f"{OBJECT_STORAGE_SYSTEM}://{OBJECT_STORAGE_LOCATIONS_FILE}",
         conn_id=OBJECT_STORAGE_CONN_ID,
     )
     if not locations_file.exists():
@@ -50,9 +50,7 @@ def _get_lat_long(location):
     geolocator = Nominatim(user_agent="MyApp/1.0 (my_email@example.com)")
 
     location_object = geolocator.geocode(location)
-
     coordinates = (float(location_object.latitude), float(location_object.longitude))
-
     locations_data[location] = coordinates
 
     locations_file.write_text(json.dumps(locations_data))
@@ -69,12 +67,13 @@ def _get_lat_long(location):
     },
 )
 def personalize_newsletter():
+
     @task
     def get_user_info() -> list[dict]:
         import json
 
         object_storage_path = ObjectStoragePath(
-            f"{OBJECT_STORAGE_SYSTEM}://" f"{OBJECT_STORAGE_PATH_USER_INFO}",
+            f"{OBJECT_STORAGE_SYSTEM}://{OBJECT_STORAGE_PATH_USER_INFO}",
             conn_id=OBJECT_STORAGE_CONN_ID,
         )
 
@@ -104,9 +103,7 @@ def personalize_newsletter():
     def create_personalized_newsletter(
         user: dict,
         **context: dict,
-    ) -> None:
-        from airflow.sdk import ObjectStoragePath
-
+    ) -> str:
         if context["dag_run"].run_type == "asset_triggered":
             run_date = context["triggering_asset_events"][
                 Asset("formatted_newsletter")
@@ -130,7 +127,7 @@ def personalize_newsletter():
         )
 
         object_storage_path = ObjectStoragePath(
-            f"{OBJECT_STORAGE_SYSTEM}://" f"{OBJECT_STORAGE_PATH_NEWSLETTER}",
+            f"{OBJECT_STORAGE_SYSTEM}://{OBJECT_STORAGE_PATH_NEWSLETTER}",
             conn_id=OBJECT_STORAGE_CONN_ID,
         )
 

@@ -1,9 +1,8 @@
 import os
 
-from airflow.sdk import Asset, dag
+from airflow.sdk import Asset, dag, task, ObjectStoragePath
 from airflow.providers.standard.operators.hitl import ApprovalOperator
-from airflow.decorators import task
-from pendulum import datetime
+from pendulum import datetime, duration
 
 _WEATHER_URL = (
     "https://api.open-meteo.com/v1/forecast?"
@@ -33,12 +32,11 @@ def _get_lat_long(location):
     Note that this version of the function caches the geocoding
     """
     import time
-    from airflow.sdk import ObjectStoragePath
     from geopy.geocoders import Nominatim
     import json
 
     locations_file = ObjectStoragePath(
-        f"{OBJECT_STORAGE_SYSTEM}://" f"{OBJECT_STORAGE_LOCATIONS_FILE}",
+        f"{OBJECT_STORAGE_SYSTEM}://{OBJECT_STORAGE_LOCATIONS_FILE}",
         conn_id=OBJECT_STORAGE_CONN_ID,
     )
     if not locations_file.exists():
@@ -53,18 +51,12 @@ def _get_lat_long(location):
     geolocator = Nominatim(user_agent="MyApp/1.0 (my_email@example.com)")
 
     location_object = geolocator.geocode(location)
-
     coordinates = (float(location_object.latitude), float(location_object.longitude))
-
     locations_data[location] = coordinates
 
     locations_file.write_text(json.dumps(locations_data))
 
     return coordinates
-
-
-from pendulum import datetime, duration
-from airflow.sdk import dag
 
 
 @dag(
@@ -76,14 +68,13 @@ from airflow.sdk import dag
     },
 )
 def personalize_newsletter():
+
     @task
     def get_user_info() -> list[dict]:
         import json
 
-        from airflow.sdk import ObjectStoragePath
-
         object_storage_path = ObjectStoragePath(
-            f"{OBJECT_STORAGE_SYSTEM}://" f"{OBJECT_STORAGE_PATH_USER_INFO}",
+            f"{OBJECT_STORAGE_SYSTEM}://{OBJECT_STORAGE_PATH_USER_INFO}",
             conn_id=OBJECT_STORAGE_CONN_ID,
         )
 
@@ -114,8 +105,6 @@ def personalize_newsletter():
         user: dict,
         **context: dict,
     ) -> None:
-        from airflow.sdk import ObjectStoragePath
-
         if context["dag_run"].run_type == "asset_triggered":
             run_date = context["triggering_asset_events"][
                 Asset("formatted_newsletter")
@@ -139,7 +128,7 @@ def personalize_newsletter():
         )
 
         object_storage_path = ObjectStoragePath(
-            f"{OBJECT_STORAGE_SYSTEM}://" f"{OBJECT_STORAGE_PATH_NEWSLETTER}",
+            f"{OBJECT_STORAGE_SYSTEM}://{OBJECT_STORAGE_PATH_NEWSLETTER}",
             conn_id=OBJECT_STORAGE_CONN_ID,
         )
 

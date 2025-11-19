@@ -1,7 +1,7 @@
-from airflow.sdk import asset, Asset, Metadata
+from airflow.sdk import asset, Asset, Metadata, ObjectStoragePath
 import os
 
-# set these enviroment variables in order to store the newsletter
+# set these environment variables to store the newsletter
 # in cloud object storage instead of the local filesystem
 OBJECT_STORAGE_SYSTEM = os.getenv("OBJECT_STORAGE_SYSTEM", default="file")
 OBJECT_STORAGE_CONN_ID = os.getenv("OBJECT_STORAGE_CONN_ID", default=None)
@@ -17,11 +17,18 @@ def raw_zen_quotes(context: dict):
     Extracts a random set of quotes.
     """
     import requests
+    from datetime import datetime
 
     r = requests.get("https://zenquotes.io/api/quotes/random")
     quotes = r.json()
 
-    run_date = context["dag_run"].logical_date.strftime("%Y-%m-%d")
+    dag_run = context.get("dag_run")
+
+    # ensure to have the run date, when this asset is materialized without time schedule
+    if dag_run and getattr(dag_run, "logical_date", None):
+        run_date = dag_run.logical_date.strftime("%Y-%m-%d")
+    else:
+        run_date = datetime.now().strftime("%Y-%m-%d")
 
     # attach the run date to the asset event
     yield Metadata(Asset("raw_zen_quotes"), {"run_date": run_date})
@@ -55,9 +62,8 @@ def selected_quotes(context: dict):
     long_quote = [quote for quote in raw_zen_quotes if int(quote["c"]) > median][0]
 
     if context["dag_run"].run_type == "asset_triggered":
-        run_date = context["triggering_asset_events"][Asset("raw_zen_quotes")][0].extra[
-            "run_date"
-        ]
+        asset_event = context["triggering_asset_events"][Asset("raw_zen_quotes")][0]
+        run_date = asset_event.extra["run_date"]
     else:
         run_date = context["dag_run"].logical_date.strftime("%Y-%m-%d")
 
@@ -78,8 +84,6 @@ def formatted_newsletter(context: dict):
     """
     Formats the newsletter.
     """
-    from airflow.io.path import ObjectStoragePath
-
     object_storage_path = ObjectStoragePath(
         f"{OBJECT_STORAGE_SYSTEM}://{OBJECT_STORAGE_PATH_NEWSLETTER}",
         conn_id=OBJECT_STORAGE_CONN_ID,
@@ -93,14 +97,12 @@ def formatted_newsletter(context: dict):
     )[0]
 
     if context["dag_run"].run_type == "asset_triggered":
-        run_date = context["triggering_asset_events"][Asset("selected_quotes")][
-            0
-        ].extra["run_date"]
+        asset_event = context["triggering_asset_events"][Asset("selected_quotes")][0]
+        run_date = asset_event.extra["run_date"]
     else:
         run_date = context["dag_run"].logical_date.strftime("%Y-%m-%d")
 
     newsletter_template_path = object_storage_path / "newsletter_template.txt"
-
     newsletter_template = newsletter_template_path.read_text()
 
     newsletter = newsletter_template.format(
@@ -114,7 +116,6 @@ def formatted_newsletter(context: dict):
     )
 
     date_newsletter_path = object_storage_path / f"{run_date}_newsletter.txt"
-
     date_newsletter_path.write_text(newsletter)
 
     # attach the run date to the asset event

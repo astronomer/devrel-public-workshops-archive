@@ -1,8 +1,7 @@
 import os
 
-from airflow.decorators import task
-from airflow.sdk import dag, Asset, AssetWatcher
 from airflow.providers.common.messaging.triggers.msg_queue import MessageQueueTrigger
+from airflow.sdk import dag, Asset, task, ObjectStoragePath, AssetWatcher
 from pendulum import datetime, duration
 
 from include.utils import process_asset_event
@@ -42,7 +41,6 @@ SYSTEM_PROMPT = (
 
 def _get_lat_long(location):
     import time
-
     from geopy.geocoders import Nominatim
 
     time.sleep(10)
@@ -57,9 +55,9 @@ def _get_lat_long(location):
 
 
 # Configure the SQS queue trigger
-
 SQS_QUEUE_URL = os.getenv(
-    "SQS_QUEUE_URL", default="https://sqs.<region>.amazonaws.com/<account>/<queue>"
+    "SQS_QUEUE_URL",
+    default="https://sqs.<region>.amazonaws.com/<account>/<queue>"
 )
 
 trigger = MessageQueueTrigger(queue=SQS_QUEUE_URL)
@@ -77,6 +75,7 @@ sqs_asset = Asset(
     },
 )
 def personalize_newsletter_genai():
+
     @task
     def get_user_info(**context) -> list[dict]:
         import json
@@ -98,10 +97,9 @@ def personalize_newsletter_genai():
         else:
             print("Triggered by formatted_newsletter asset...")
             print("Creating newsletters for all subscribers...")
-            from airflow.io.path import ObjectStoragePath
 
             object_storage_path = ObjectStoragePath(
-                f"{OBJECT_STORAGE_SYSTEM}://" f"{OBJECT_STORAGE_PATH_USER_INFO}",
+                f"{OBJECT_STORAGE_SYSTEM}://{OBJECT_STORAGE_PATH_USER_INFO}",
                 conn_id=OBJECT_STORAGE_CONN_ID,
             )
 
@@ -137,7 +135,6 @@ def personalize_newsletter_genai():
     ):
         import re
         import json
-        from airflow.io.path import ObjectStoragePath
         from airflow.providers.amazon.aws.hooks.base_aws import AwsBaseHook
 
         aws_hook = AwsBaseHook(aws_conn_id="aws_default", client_type="bedrock-runtime")
@@ -199,7 +196,7 @@ def personalize_newsletter_genai():
     def combine_information(
         user_info: list[dict],
         personalized_quotes: list[dict],
-    ) -> None:
+    ) -> list[dict]:
         user_info_dict = {user["id"]: user for user in user_info}
         for quote in personalized_quotes:
             user_id = quote["user_id"]
@@ -216,10 +213,8 @@ def personalize_newsletter_genai():
     def create_personalized_newsletter(
         user: list[dict],
         **context: dict,
-    ) -> None:
+    ) -> str:
         import textwrap
-
-        from airflow.io.path import ObjectStoragePath
 
         if context["dag_run"].run_type == "asset_triggered":
             run_date = context["triggering_asset_events"][
@@ -247,7 +242,7 @@ def personalize_newsletter_genai():
         )
 
         object_storage_path = ObjectStoragePath(
-            f"{OBJECT_STORAGE_SYSTEM}://" f"{OBJECT_STORAGE_PATH_NEWSLETTER}",
+            f"{OBJECT_STORAGE_SYSTEM}://{OBJECT_STORAGE_PATH_NEWSLETTER}",
             conn_id=OBJECT_STORAGE_CONN_ID,
         )
 
@@ -276,6 +271,7 @@ def personalize_newsletter_genai():
         )
 
         personalized_newsletter_path.write_text(updated_content)
+        return updated_content
 
     create_personalized_newsletter.expand(user=_combine_information)
 
