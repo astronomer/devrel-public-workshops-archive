@@ -3,6 +3,8 @@ import os
 from airflow.models import DagRun
 from airflow.sdk import asset, Asset, Metadata, ObjectStoragePath
 
+from include.utils import get_run_date
+
 # set these environment variables to store the newsletter
 # in cloud object storage instead of the local filesystem
 OBJECT_STORAGE_SYSTEM = os.getenv("OBJECT_STORAGE_SYSTEM", default="file")
@@ -11,22 +13,6 @@ OBJECT_STORAGE_PATH_NEWSLETTER = os.getenv(
     "OBJECT_STORAGE_PATH_NEWSLETTER",
     default="include/newsletter",
 )
-
-
-def _get_run_date(triggering_asset: Asset = None, **context: dict) -> str | None:
-    from datetime import datetime
-    dag_run: DagRun = context.get("dag_run")
-
-    if not dag_run:
-        return None
-
-    if triggering_asset and dag_run.run_type == "asset_triggered":
-        asset_event = context["triggering_asset_events"][triggering_asset][0]
-        return asset_event.extra["run_date"]
-    elif getattr(dag_run, "logical_date", None):
-        return dag_run.logical_date.strftime("%Y-%m-%d")
-    else:
-        return datetime.now().strftime("%Y-%m-%d")
 
 
 @asset(schedule="@daily")
@@ -40,7 +26,7 @@ def raw_zen_quotes(context: dict):
     quotes = r.json()
 
     # always have a run date to know for which date the newsletter has been created
-    run_date = _get_run_date(context=context)
+    run_date = get_run_date(context)
 
     # attach the run date to the asset event
     yield Metadata(Asset("raw_zen_quotes"), {"run_date": run_date})
@@ -74,7 +60,7 @@ def selected_quotes(context: dict):
     long_quote = [quote for quote in raw_quotes if int(quote["c"]) > median][0]
 
     # extract run date from the triggering asset
-    run_date = _get_run_date(triggering_asset=raw_zen_quotes, context=context)
+    run_date = get_run_date(context, raw_zen_quotes)
 
     # attach the run date to the asset
     yield Metadata(Asset("selected_quotes"), {"run_date": run_date})
@@ -104,7 +90,7 @@ def formatted_newsletter(context: dict):
     )[0]
 
     # extract run date from the triggering asset
-    run_date = _get_run_date(triggering_asset=selected_quotes, context=context)
+    run_date = get_run_date(context, selected_quotes)
 
     # attach the run date to the asset event
     yield Metadata(Asset("formatted_newsletter"), {"run_date": run_date})

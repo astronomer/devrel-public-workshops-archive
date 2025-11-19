@@ -4,7 +4,7 @@ from airflow.providers.common.messaging.triggers.msg_queue import MessageQueueTr
 from airflow.sdk import dag, Asset, task, ObjectStoragePath, AssetWatcher
 from pendulum import datetime, duration
 
-from include.utils import process_asset_event
+from include.utils import process_asset_event, get_run_date
 
 _WEATHER_URL = (
     "https://api.open-meteo.com/v1/forecast?"
@@ -106,16 +106,14 @@ def personalize_newsletter_genai():
             user_info = []
             for file in object_storage_path.iterdir():
                 if file.is_file() and file.suffix == ".json":
-
                     bytes = file.read_block(offset=0, length=None)
-
                     user_info.append(json.loads(bytes))
 
         return user_info
 
     _get_user_info = get_user_info()
 
-    @task(max_active_tis_per_dag=1, retries=4, pool="weather_api")
+    @task(max_active_tis_per_dag=1, retries=4)
     def get_weather_info(user: dict) -> dict:
         import requests
 
@@ -138,14 +136,21 @@ def personalize_newsletter_genai():
         from airflow.providers.amazon.aws.hooks.base_aws import AwsBaseHook
 
         aws_hook = AwsBaseHook(aws_conn_id="aws_default", client_type="bedrock-runtime")
-        session = aws_hook.get_session(region_name="us-east-1")
-        bedrock = session.client("bedrock-runtime", region_name="us-east-1")
+        session = aws_hook.get_session()
+        bedrock = session.client("bedrock-runtime")
 
         user_id = user["id"]
         name = user["name"]
         motivation = user["motivation"]
         favorite_sci_fi_character = user["favorite_sci_fi_character"]
-        series = favorite_sci_fi_character.split(" (")[1].replace(")", "")
+
+        # extract series if character format is "character (series)"
+        series_match = re.search(r"\((.+)\)$", favorite_sci_fi_character)
+        if series_match:
+            series = series_match.group(1)
+        else:
+            series = "Unknown"
+
         date = context["dag_run"].run_after.strftime("%Y-%m-%d")
 
         object_storage_path = ObjectStoragePath(
@@ -154,7 +159,6 @@ def personalize_newsletter_genai():
         )
 
         date_newsletter_path = object_storage_path / f"{date}_newsletter.txt"
-
         newsletter_content = date_newsletter_path.read_text()
 
         quotes = re.findall(r'\d+\.\s+"([^"]+)"', newsletter_content)
@@ -167,21 +171,26 @@ def personalize_newsletter_genai():
         )
         user_prompt = "The quotes to modify are:\n" + "\n".join(quotes)
 
-        # Build the request for the model
         body = {
-            "prompt": f"\n\nHuman: {formatted_system_prompt}\n\n{user_prompt}\n\nAssistant:",
-            "max_tokens_to_sample": 1024,
-            "temperature": 0.7,
             "anthropic_version": "bedrock-2023-05-31",
+            "max_tokens": 512,
+            "temperature": 0.5,
+            "system": formatted_system_prompt,
+            "messages": [{
+                "role": "user",
+                "content": user_prompt
+            }]
         }
 
         response = bedrock.invoke_model(
-            modelId="anthropic.claude-v2",
+            modelId="us.anthropic.claude-sonnet-4-5-20250929-v1:0",
             body=json.dumps(body),
             accept="application/json",
             contentType="application/json",
         )
-        generated_response = json.loads(response["body"].read())["completion"]
+
+        response_body = json.loads(response["body"].read())
+        generated_response = response_body["content"][0]["text"]
 
         return {
             "user_id": user_id,
@@ -216,12 +225,7 @@ def personalize_newsletter_genai():
     ) -> str:
         import textwrap
 
-        if context["dag_run"].run_type == "asset_triggered":
-            run_date = context["triggering_asset_events"][
-                Asset("formatted_newsletter")
-            ][0].extra["run_date"]
-        else:
-            run_date = context["dag_run"].logical_date.strftime("%Y-%m-%d")
+        run_date = get_run_date(context, Asset("formatted_newsletter"))
 
         id = user["id"]
         name = user["name"]
