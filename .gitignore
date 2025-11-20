@@ -8,4 +8,5 @@ airflow-webserver.pid
 webserver_config.py
 airflow.cfg
 airflow.db
+include/newsletter/*_newsletter*.txt
 .env

@@ -4,7 +4,7 @@ from airflow.providers.common.messaging.triggers.msg_queue import MessageQueueTr
 from airflow.sdk import dag, Asset, task, ObjectStoragePath, AssetWatcher
 from pendulum import datetime, duration
 
-from include.utils import extract_user_info_from_asset_extra, get_run_date
+from include.utils import extract_user_info_from_asset_extra, get_run_date, get_lat_long
 
 _WEATHER_URL = (
     "https://api.open-meteo.com/v1/forecast?"
@@ -23,6 +23,10 @@ OBJECT_STORAGE_PATH_USER_INFO = os.getenv(
     "OBJECT_STORAGE_PATH_USER_INFO",
     default="include/user_data",
 )
+OBJECT_STORAGE_LOCATIONS_FILE = os.getenv(
+    "OBJECT_STORAGE_LOCATIONS_FILE",
+    default="include/locations.json",
+)
 
 SYSTEM_PROMPT = (
     "You are {favorite_sci_fi_character} "
@@ -37,21 +41,6 @@ SYSTEM_PROMPT = (
     "Do NOT verbatim repeat any of the provided quotes. "
     "The quote should be between 200 and 500 characters long."
 )
-
-
-def _get_lat_long(location):
-    import time
-    from geopy.geocoders import Nominatim
-
-    time.sleep(10)
-    geolocator = Nominatim(user_agent="my-newsletter-app-3")
-
-    location = geolocator.geocode(location)
-
-    return (
-        float(location.latitude),
-        float(location.longitude),
-    )
 
 
 # Configure the SQS queue trigger
@@ -118,7 +107,12 @@ def personalize_newsletter_genai():
     def get_weather_info(user: dict) -> dict:
         import requests
 
-        lat, long = _get_lat_long(user["location"])
+        locations_file = ObjectStoragePath(
+            f"{OBJECT_STORAGE_SYSTEM}://{OBJECT_STORAGE_LOCATIONS_FILE}",
+            conn_id=OBJECT_STORAGE_CONN_ID,
+        )
+
+        lat, long = get_lat_long(user["location"], locations_file)
         r = requests.get(_WEATHER_URL.format(lat=lat, long=long))
         user["weather"] = r.json()
 

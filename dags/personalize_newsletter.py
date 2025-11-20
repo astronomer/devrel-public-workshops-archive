@@ -3,6 +3,8 @@ import os
 from airflow.sdk import Asset, dag, task, ObjectStoragePath
 from pendulum import datetime, duration
 
+from include.utils import get_lat_long
+
 _WEATHER_URL = (
     "https://api.open-meteo.com/v1/forecast?"
     "latitude={lat}&longitude={long}&current="
@@ -24,38 +26,6 @@ OBJECT_STORAGE_LOCATIONS_FILE = os.getenv(
     "OBJECT_STORAGE_LOCATIONS_FILE",
     default="include/locations.json",
 )
-
-
-def _get_lat_long(location):
-    """
-    Note that this version of the function caches the geocoding
-    """
-    import time
-    from geopy.geocoders import Nominatim
-    import json
-
-    locations_file = ObjectStoragePath(
-        f"{OBJECT_STORAGE_SYSTEM}://{OBJECT_STORAGE_LOCATIONS_FILE}",
-        conn_id=OBJECT_STORAGE_CONN_ID,
-    )
-    if not locations_file.exists():
-        locations_file.write_text("{}")
-
-    locations_data = json.loads(locations_file.read_text())
-
-    if location in locations_data:
-        return tuple(locations_data[location])
-
-    time.sleep(10)
-    geolocator = Nominatim(user_agent="MyApp/1.0 (my_email@example.com)")
-
-    location_object = geolocator.geocode(location)
-    coordinates = (float(location_object.latitude), float(location_object.longitude))
-    locations_data[location] = coordinates
-
-    locations_file.write_text(json.dumps(locations_data))
-
-    return coordinates
 
 
 @dag(
@@ -91,7 +61,12 @@ def personalize_newsletter():
     def get_weather_info(user: dict) -> dict:
         import requests
 
-        lat, long = _get_lat_long(user["location"])
+        locations_file = ObjectStoragePath(
+            f"{OBJECT_STORAGE_SYSTEM}://{OBJECT_STORAGE_LOCATIONS_FILE}",
+            conn_id=OBJECT_STORAGE_CONN_ID,
+        )
+
+        lat, long = get_lat_long(user["location"], locations_file)
         r = requests.get(_WEATHER_URL.format(lat=lat, long=long))
         user["weather"] = r.json()
 
@@ -132,7 +107,6 @@ def personalize_newsletter():
         )
 
         daily_newsletter_path = object_storage_path / f"{run_date}_newsletter.txt"
-
         generic_content = daily_newsletter_path.read_text()
 
         personalized_content = generic_content.replace(

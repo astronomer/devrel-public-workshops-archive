@@ -1,7 +1,11 @@
+import json
+import time
 from datetime import datetime
 
 from airflow import Asset
 from airflow.models import DagRun
+from airflow.sdk import ObjectStoragePath
+from geopy import Nominatim, ArcGIS
 
 
 def get_run_date(context: dict, triggering_asset: Asset = None) -> str | None:
@@ -22,6 +26,51 @@ def get_run_date(context: dict, triggering_asset: Asset = None) -> str | None:
         return dag_run.logical_date.strftime("%Y-%m-%d")
     else:
         return datetime.now().strftime("%Y-%m-%d")
+
+
+def get_lat_long(location: str, locations_file: ObjectStoragePath):
+    """
+    Caches geocoding and uses a fallback provider if Nominatim fails
+    """
+    if not locations_file.exists():
+        locations_file.write_text("{}")
+        locations_data = {}
+    else:
+        content = locations_file.read_text()
+        locations_data = json.loads(content) if content else {}
+
+    if location in locations_data:
+        return tuple(locations_data[location])
+
+    geolocators = [
+        (Nominatim(user_agent="MyApp/1.0 (my_email@example.com)"), "Nominatim"),
+        (ArcGIS(), "ArcGIS")
+    ]
+
+    coordinates = None
+    for geolocator, name in geolocators:
+        try:
+            if name == "Nominatim":
+                time.sleep(5)
+
+            print(f"Attempting geocode with {name}...")
+            location_object = geolocator.geocode(location)
+
+            if location_object:
+                coordinates = (float(location_object.latitude), float(location_object.longitude))
+                break
+
+        except Exception as e:
+            print(f"Provider {name} failed: {e}")
+            continue
+
+    if coordinates:
+        locations_data[location] = coordinates
+        locations_file.write_text(json.dumps(locations_data))
+        return coordinates
+    else:
+        raise Exception(f"Could not geocode location: {location} with any provider.")
+
 
 def extract_user_info_from_asset_extra(asset_extra):
     return [{
