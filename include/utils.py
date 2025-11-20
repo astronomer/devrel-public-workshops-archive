@@ -72,11 +72,8 @@ def get_lat_long(location: str, locations_file: ObjectStoragePath):
         raise Exception(f"Could not geocode location: {location} with any provider.")
 
 
-def extract_user_info_from_asset_extra(asset_extra):
-    return [{
-        "id": 129,
-        "name": "Jan",
-        "location": "Bern",
-        "motivation": "Find the truth.",
-        "favorite_sci_fi_character": "Jadzia (Star Trek)",
-    }]
+def extract_user_info_from_asset_event(asset_event):
+    message_body = asset_event.extra["payload"]["message_batch"][0]["Body"]
+    user_details = json.loads(message_body)
+
+    return [user_details]

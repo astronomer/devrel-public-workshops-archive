@@ -4,7 +4,7 @@ from airflow.providers.common.messaging.triggers.msg_queue import MessageQueueTr
 from airflow.sdk import dag, Asset, task, ObjectStoragePath, AssetWatcher
 from pendulum import datetime, duration
 
-from include.utils import extract_user_info_from_asset_extra, get_run_date, get_lat_long
+from include.utils import extract_user_info_from_asset_event, get_run_date, get_lat_long
 
 _WEATHER_URL = (
     "https://api.open-meteo.com/v1/forecast?"
@@ -43,16 +43,12 @@ SYSTEM_PROMPT = (
 )
 
 
-# Configure the SQS queue trigger
-SQS_QUEUE_URL = os.getenv(
-    "SQS_QUEUE_URL",
-    default="https://sqs.<region>.amazonaws.com/<account>/<queue>"
-)
+# configure the SQS queue trigger
+SQS_QUEUE_URL = os.getenv("SQS_QUEUE_URL")
 
-trigger = MessageQueueTrigger(queue=SQS_QUEUE_URL)
-sqs_asset = Asset(
-    "sqs_queue_asset", watchers=[AssetWatcher(name="sqs_watcher", trigger=trigger)]
-)
+# waiter_delay: delay in seconds between polls
+trigger = MessageQueueTrigger(queue=SQS_QUEUE_URL, waiter_delay=5)
+sqs_asset = Asset("sqs_queue_asset", watchers=[AssetWatcher(name="sqs_watcher", trigger=trigger)])
 
 
 @dag(
@@ -69,21 +65,12 @@ def personalize_newsletter_genai():
     def get_user_info(**context) -> list[dict]:
         import json
 
-        asset_event_name = None
-
         triggering_asset_events = context["triggering_asset_events"]
-        for asset_event in triggering_asset_events:
-            asset_event_name = asset_event.name
-            asset_extra = asset_event.extra
 
-            print("The triggering asset event is: ", asset_event_name)
-            print("Asset event: ", asset_event)
-
-        if asset_event_name == "sqs_queue_asset":
+        if len(triggering_asset_events[sqs_asset]) > 0:
             print("Triggered by SQS queue asset...")
-            print("Processing the message from the SQS queue: ", asset_extra)
-            user_info = extract_user_info_from_asset_extra(asset_extra)
-
+            print("Creating newsletters for specific subscriber...")
+            user_info = extract_user_info_from_asset_event(triggering_asset_events[sqs_asset][0])
         else:
             print("Triggered by formatted_newsletter asset...")
             print("Creating newsletters for all subscribers...")
