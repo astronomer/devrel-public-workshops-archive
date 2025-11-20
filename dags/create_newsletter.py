@@ -1,6 +1,5 @@
 import os
 
-from airflow.models import DagRun
 from airflow.sdk import asset, Asset, Metadata, ObjectStoragePath
 
 from include.utils import get_run_date
