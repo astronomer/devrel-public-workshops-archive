@@ -32,11 +32,11 @@ The final preparation step is to setup a **free** trial of Astro to run Airflow 
 
    ![Import public GitHub repository](img/astro-ide-setup-2.png)
 
-4. To start Airflow, click the `Start Test Deployment` button. This will create a small Airflow Deployment for you to run your dags. It may take a few minutes to spin up.
+4. To start Airflow, click the _Start Test Deployment_ button. This will create a small Airflow Deployment for you to run your dags. It may take a few minutes to spin up.
 
    ![Start Test Deployment](img/astro-ide-setup-3.png)
 
-5. To enable scheduled dag runs in your new Airflow Deployment, click on the drop down next to `Sync to test`, and click `Test Deployment Details`.
+5. To enable scheduled dag runs in your new Airflow Deployment, click on the drop down next to _Sync to test_, and click _Test Deployment Details_.
 
    ![Test deployment details](img/deployment-change-1.png)
 
@@ -195,76 +195,75 @@ We will also spice up the newsletter by using the user's favorite sci-fi charact
 
 You'll need:
 - AWS account with appropriate permissions
-- Access to Amazon Bedrock (may require model access requests)
+- Access to Amazon Bedrock
 - SQS queue creation permissions
 
-## 1. Update the Dag code
+## 1. Connect to AWS
 
-1. Navigate to `dags/personalize_newsletter.py`
-2. Replace the entire contents with the code from `solutions/personalize_newsletter_genai.py`
+In order to interact with AWS, we first need to set up an [Airflow connection](https://www.astronomer.io/docs/learn/connections). Although you can configure these through the Airflow UI or Astro workspace settings, we will use environment variables for this specific workshop.
 
-## 2. Configure environment variables
+Since Airflow automatically looks for environment variables starting with `AIRFLOW_CONN` to use them for connections, we can use this method to easily pass credentials. We will also add a second variable for the SQS queue URL. To apply these, we will update our test deployment settings in the Astro frontend.
 
-1. Copy the contents of `.env_example` to `.env`
-2. Update the `AIRFLOW_CONN_AWS_DEFAULT` with your AWS credentials:
+1. In the Astro IDE, click on the drop down next to `Sync to test`, and click `Test Deployment Details`.
 
-   ```bash
-   AIRFLOW_CONN_AWS_DEFAULT=aws://YOUR_ACCESS_KEY:YOUR_SECRET_KEY@/?region_name=us-east-1
+   ![Test deployment details](img/deployment-change-1.png)
+
+2. Go to the _Environment_ tab, click _Edit Deployment Variables_, and add the following two environment variables by clicking on _Add Variable_. Simply replace the values with your details and paste them into the corresponding input fields. Hint: you don't need to change the value format, you can paste it directly into the value field.
+
+   - **Key**: `AIRFLOW_CONN_AWS_DEFAULT`, **value**:
    ```
-
-> [!IMPORTANT]
-> Add the `.env` file to `.gitignore` to avoid pushing credentials to GitHub
-
-## 3. Create SQS queue
-
-1. Log into your AWS Console
-2. Navigate to **Amazon SQS**
-3. Create a new queue (standard queue is sufficient)
-4. Copy the queue URL
-5. Add the URL to your `.env` file:
-
-   ```bash
-   SQS_QUEUE_URL=https://sqs.us-east-1.amazonaws.com/123456789012/your-queue-name
-   ```
-
-## 4. Configure bedrock access
-
-1. In AWS Console, navigate to **Amazon Bedrock**
-2. Go to **Model access** in the left sidebar
-3. Request access to a model (e.g., Claude or Titan models)
-4. Wait for approval (this may take a few minutes)
-
-## 5. Restart Airflow
-
-Restart your Airflow test deployment to load the new environment variables
-
-## 6. Test event-driven scheduling
-
-1. Navigate to your SQS queue in the AWS Console
-2. Send a message with this JSON format:
-
-   ```json
    {
-   "id": 300,
-   "name": "Your Name",
-   "location": "Your City",
-   "motivation": "Your motivational theme",
-   "favorite_sci_fi_character": "Your favorite character"
+      "conn_type": "aws",
+      "login": "<your_aws_access_key_id>",
+      "password": "<your_aws_secret_access_key>",
+      "extra": {
+         "region_name": "<your_aws_region>"
+      }
    }
    ```
 
-3. The `personalize_newsletter` Dag should automatically start running
-4. Monitor the Dag execution in the Airflow UI
+   - **Key**: `SQS_QUEUE_URL`, **value**:
+   ```
+   <your_sqs_queue_url>
+   ```
 
-## 7. Review Results
+## 2. Update the Dag code
 
-1. Check the Dag execution logs
-2. Review your personalized newsletter in the `include/newsletters` folder
-3. Notice how the GenAI integration creates more sophisticated personalization
+1. Navigate to `dags/personalize_newsletter.py`
+2. Replace the entire contents with the code from `solutions/personalize_newsletter_genai.py`
+3. Click on _Sync to test_ and wait for completion
 
-## 8. (Bonus) Adjust the Prompt
+## 3. Test event-driven scheduling
 
-Notice how the prompt in the code uses the user's favorite sci‑fi character? Have some fun—adjust the prompt and see how unique a newsletter you can create.
+Before running the personalization pipeline, we need to ensure today's newsletter is created, since it serves as the base for personalization. Let's first trigger the full process without event-driven scheduling. This will create the newsletter and personalize it for all users defined in `include/user_data`.
+
+1. Open Airflow and trigger the `raw_zen_quotes` Dag in the Dags view, and wait until all Dags finished successfully (incl. `personalize_newsletter_genai`).
+
+Now it is time for event-driven scheduling, to trigger the personalization for a specific user.
+
+2. Navigate to your SQS queue in the AWS Console
+3. Send a message with this JSON format (adjust the values):
+
+   ```json
+   {
+      "id": 300,
+      "name": "Your Name",
+      "location": "Your City",
+      "motivation": "Your motivational theme",
+      "favorite_sci_fi_character": "Your favorite character"
+   }
+   ```
+
+4. The `personalize_newsletter_genai` Dag should automatically start running (the poll interval is set to 5 seconds)
+5. Monitor the Dag execution in the Airflow UI
+
+## 4. Review Results
+
+Review your personalized newsletter in the log output of the `create_personalized_newsletter` task in the `personalize_newsletter_genai` Dag.
+
+## 5. (Bonus) Adjust the Prompt
+
+Notice how the prompt in the code uses the user's favorite sci‑fi character? Have some fun, adjust the prompt and see how unique a newsletter you can create.
 
 > [!IMPORTANT]
 > Module complete! You've now experienced the full power of Airflow 3's new features.

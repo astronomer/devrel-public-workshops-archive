@@ -193,12 +193,6 @@ Before starting this workshop, please ensure you have the following prerequisite
   - Amazon Bedrock (for GenAI capabilities)
   - Basic IAM role and policy management
 
-#### AWS service access
-
-- **Amazon Bedrock model access**: May require requesting access to specific AI models
-- **SQS queue creation**: Ability to create and manage SQS queues
-- **AWS CLI or Console access**: For configuring services and monitoring
-
 ### Required software
 
 - **Web browser**: For accessing Astro IDE and Airflow UI
