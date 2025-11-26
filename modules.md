@@ -141,22 +141,21 @@ Airflow 3.1 introduced human-in-the-loop (HITL) operators, allowing manual inter
    ```
    Make sure the approval task comes after `create_personalized_newsletter` in your workflow.
 
-5. Save the file
-6. Click `Sync to Test` in the upper right corner and wait for the sync to complete
+5. Click `Sync to Test` in the upper right corner and wait for the sync to complete
 
 _Switch back to the Airflow UI._
 
-7. Run the `raw_zen_quotes` Dag again to trigger an end-to-end run
-8. The workflow will pause at the approval step
-9. Navigate to **Browse** → **Required Actions** in the Airflow UI
+6. Run the `raw_zen_quotes` Dag again to trigger an end-to-end run
+7. The workflow will pause at the approval step
+8. Navigate to **Browse** → **Required Actions** in the Airflow UI
 
    The **Required Actions** view provides:
       - Instance-wide view of all pending approvals
       - Easy access to review content
       - Batch approval capabilities for multiple items
 
-10. Open the pending action, review the newsletter content, and either **Approve** or **Reject** the results
-11. Try to change the `body` of your `ApprovalOperator`. Change it to a multi-line-string and add Markdown as it will be rendered in the Airflow UI.
+9. Open the pending action, review the newsletter content, and either **Approve** or **Reject** the results
+10. Try to change the `body` of your `ApprovalOperator`. Change it to a multi-line-string and add Markdown as it will be rendered in the Airflow UI.
 
 # Module 3: Use Dag versioning
 
