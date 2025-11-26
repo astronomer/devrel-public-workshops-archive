@@ -121,7 +121,6 @@ Check the  guide for more details and an overview of all available options.
 - **[Astro IDE](https://www.astronomer.io/product/ide/)**: Author, test, and release production-ready Dags from your browser
 - **[Astro](https://www.astronomer.io/product/)**: Managed Airflow platform
 - **[Python](https://www.python.org/)**: Primary development language
-- **[Git](https://git-scm.com/)**: Version control and collaboration
 
 ### External integrations
 
@@ -169,10 +168,6 @@ Before starting this workshop, please ensure you have the following prerequisite
 - **Event-driven scheduling**: A subtype of data-aware scheduling where a Dag triggers when messages arrive in a message queue. It connects an AssetWatcher to an asset that monitors one or more triggers. Each trigger is an asynchronous Python process responsible for polling messages from the queue.
 
 ## Required accounts and access
-
-### GitHub
-
-- **GitHub**: Have your account ready to be able to fork the workshop repository during the process
 
 ### Astro trial
 
