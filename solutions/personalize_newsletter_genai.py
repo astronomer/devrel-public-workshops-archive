@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 
 from airflow.providers.common.messaging.triggers.msg_queue import MessageQueueTrigger
 from airflow.sdk import dag, Asset, task, ObjectStoragePath, AssetWatcher
@@ -90,7 +91,7 @@ def personalize_newsletter_genai():
 
     _get_user_info = get_user_info()
 
-    @task(max_active_tis_per_dag=1, retries=4)
+    @task(max_active_tis_per_dag=1, retries=4, execution_timeout=timedelta(minutes=1))
     def get_weather_info(user: dict) -> dict:
         import requests
 
