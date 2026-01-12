@@ -2,6 +2,8 @@ from airflow.configuration import AIRFLOW_HOME
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from airflow.sdk import dag, chain
 
+from include.utils import MissionControlOperator
+
 _DUCKDB_CONN_ID = "duckdb_astrotrips"
 
 @dag(
@@ -23,12 +25,12 @@ def setup():
     )
 
     _fixtures = SQLExecuteQueryOperator(
-        task_id="fixtures",
+        task_id="fixxtures",
         conn_id=_DUCKDB_CONN_ID,
         sql="fixtures.sql"
     )
 
-    chain(_cleanup, _schema, _fixtures)
+    chain(_cleanup, _schema, _fixtures, MissionControlOperator(task_id="mission_control"))
 
 setup_dag = setup()
 
