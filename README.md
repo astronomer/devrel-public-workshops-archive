@@ -1,5 +1,40 @@
 # Workshop base
 
+## Scenario: AstroTrips
+
+## Workshop repo structure
+
+_todo: this section belongs to `main` but while this new base in development, it is kept here._
+
+This repository uses branches to represent individual workshops.
+
+New workshops follow a structured naming scheme:
+```
+workshops/<scenario>/<workshop-name>
+```
+
+Using slash-separated branch names allows many tools (for example GitHub, GitLab, and IDE integrations) to render branches in a tree-like structure, making related workshops easier to discover and navigate.
+
+Each scenario has a base branch:
+```
+workshops/<scenario>/_base
+```
+
+which contains all shared components for the scenario, such as:
+- scenario description and context
+- shared utilities
+- setup DAGs and helper functions
+- reusable operators
+
+**This branch is not a runnable workshop on its own. It serves as a template and foundation for all scenario-based workshops.**
+
+Individual workshops are created as separate branches derived from `_base`, for example:
+```
+workshops/astrotrips/etl
+```
+
+These branches extend the base scenario with workshop-specific components, Dags, exercises, and instructions.
+
 ## Gamification
 
 The base project comes with a custom `MissionControlOperator` ([include/utils.py](include/utils.py)).
