@@ -1,6 +1,45 @@
 # Workshop base
 
+## Prerequisites
+
+- Copy `.env.dist` to `.env`.
+- Access to the [Astro IDE](https://www.astronomer.io/product/ide/).
+
 ## Scenario: AstroTrips
+
+AstroTrips is a fictional travel company specializing in interplanetary trips. Customers can book journeys to destinations like Mars, Venus, or Saturn, complete with launch windows, spacecraft assignments, and premium add-ons.
+
+As AstroTrips grows, so does the amount of data it generates: bookings, customers, destinations, prices, and operational metrics. To support analytics and reporting, the company relies on Apache Airflow to orchestrate data pipelines that ingest, transform, and validate this data.
+
+Throughout this workshop, you will work as a data engineer at AstroTrips. Your task is to build and extend Airflow Dags that process AstroTrips data, using realistic datasets and workflows while focusing on best practices rather than domain complexity.
+
+![AstroTrips](doc/astrotrips.png)
+
+The underlying database used for AstroTips is DuckDB and it comes with a set of base tables and might be extended with additional tables depending on the workshop.
+
+## Using MotherDuck (optional)
+
+This project is configured to use DuckDB with a local database file stored in `include/astrotrips.duckdb`. While this setup is sufficient for this scenario, it has specific limitations:
+
+- **No concurrent access:** The database cannot be written to by multiple concurrent processes.
+- **No distributed processing:** Because the database is a local file, all Airflow tasks must run on the same node to access it. This works reliably with the Astro CLI local environment (which uses the `LocalExecutor` to spawn worker subprocesses within the scheduler container) or a single-worker setup. However, it will fail in a distributed environment with multiple distinct worker nodes.
+
+To run this code in a distributed setup or enable concurrent access, you can easily switch to [MotherDuck](https://motherduck.com), a managed cloud service for DuckDB.
+
+1. Sign up for a free account at [motherduck.com](https://motherduck.com).
+2. Once logged in, create a new attached database named `astrotrips`.
+3. Go to **Settings** -> **Integrations** -> **Access Tokens**.
+4. Click **Create token**, keep the default settings, and select **Create token** in the popup window.
+5. Copy the generated token and update the connection details in your `.env` file as follows:
+
+```
+AIRFLOW_CONN_DUCKDB_ASTROTRIPS='{
+    "conn_type":"duckdb",
+    "host":"md:astrotrips?motherduck_token=<YOUR_MOTHERDUCK_TOKEN>"
+}'
+```
+
+> **Note:** Ensure you also update any other references to the local DuckDB file path, such as `include/connections.yaml` if applicable.
 
 ## Workshop repo structure
 
@@ -69,3 +108,9 @@ This allows the host to quickly assess how close a solution is to the intended o
 Since the clearance code is derived from the Dag structure and requires the workshop solution to be executed, it is difficult to fake and therefore provides a lightweight but effective form of cheat resistance without an external dependency.
 
 ![Mission control](doc/mission-control.png)
+
+## README and exercises
+
+For each workshop:
+- remove unnecessary parts of this `README` to focus on the scenario introduction.
+- fill out the [exercises.md](exercises.md) to have a document fully focused on the actionable workshop exercises.
