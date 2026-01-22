@@ -5,6 +5,7 @@ Welcome to the Apache Airflow ELT/ETL workshop! You will build and orchestrate d
 **What you will learn:**
 
 - Authoring data pipelines with parameterized SQL queries.
+- Use a combination of TaskFlow API and classic operators for orchestration.
 - Asset-aware scheduling for data dependencies.
 - Dynamic task mapping for scalable data processing.
 - Data quality checks as part of your pipeline.
