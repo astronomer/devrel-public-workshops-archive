@@ -82,6 +82,173 @@ The final setup step is to start a test deployment (a fully functional Airflow e
 
 ---
 
-# Exercise 1: tbd
+# Exercise 1: Build the daily report Dag
 
-_Add workshop exercises here._
+In this exercise, you will create a Dag that ingests new booking data, generates a daily report, and validates the output. The validated report is then published as an **asset**, making it available to downstream consumers.
+
+**What you will learn:**
+
+- Running parameterized SQL queries with `SQLExecuteQueryOperator`.
+- Validating data with `SQLColumnCheckOperator`.
+- Publishing an asset to signal data availability.
+
+## Create the Dag file
+
+1. In the Astro IDE, create a new file `dags/daily_report.py`.
+2. Add the following imports and connection constant:
+
+    ```python
+    from airflow.configuration import AIRFLOW_HOME
+    from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator, SQLColumnCheckOperator
+    from airflow.sdk import dag, chain, Asset
+    from pendulum import datetime
+
+    _DUCKDB_CONN_ID = "duckdb_astrotrips"
+    ```
+
+3. Define the Dag using the `@dag` decorator:
+
+    ```python
+    @dag(
+        schedule="@daily",
+        start_date=datetime(2026, 1, 1),
+        tags=["astrotrips", "reporting"],
+        template_searchpath=f"{AIRFLOW_HOME}/include/sql"
+    )
+    def daily_report():
+        pass
+
+    daily_report()
+    ```
+
+    The `template_searchpath` parameter tells Airflow where to find SQL files referenced by name.
+
+> [!TIP]
+> Learn more about [Airflow decorators and the TaskFlow API](https://www.astronomer.io/docs/learn/airflow-decorators).
+
+## Add the ingest task
+
+The first task simulates ingesting new booking data by calling a SQL script that generates random bookings.
+
+1. Inside the `daily_report()` function, add:
+
+    ```python
+    _ingest_data = SQLExecuteQueryOperator(
+        task_id="ingest",
+        conn_id=_DUCKDB_CONN_ID,
+        sql="generate.sql",
+        params={ "n_bookings": 5 }
+    )
+    ```
+
+    The `params` dictionary passes variables to the SQL template. Open `include/sql/generate.sql` to see how `{{ params.n_bookings }}` is used.
+
+> [!NOTE]
+> **`parameters` vs `params`**
+>
+> These two attributes serve different purposes:
+>
+> - **`parameters`** uses database-level parameter binding. The placeholder syntax depends on your database driver (e.g., `$reportDate` for DuckDB, `%(name)s` for Postgres). This is the preferred and secure approach since the database driver handles escaping, preventing SQL injection. You can still use Jinja templating for the values themselves, when instantiating the operator.
+>
+> - **`params`** uses Jinja templating before the query reaches the database driver. It treats your SQL as a plain string and replaces `{{ params.name }}` placeholders. This is useful when the SQL structure itself needs to be dynamic, like repeating query fragments multiple times.
+>
+> Learn more about parameters vs params [in this video](https://www.youtube.com/watch?v=QNAzQgvcQGM). It also demonstrates the risk of SQL injection.
+
+> [!NOTE]
+> **How `SQLExecuteQueryOperator` works under the hood**
+>
+> The `SQLExecuteQueryOperator` is a generic operator for running SQL workloads from Airflow. It relies on the [`DbApiHook`](https://airflow.apache.org/docs/apache-airflow-providers-common-sql/stable/_api/airflow/providers/common/sql/hooks/sql/index.html) abstract base class, which is designed to work with Python's [DB-API 2.0 (PEP 249)](https://peps.python.org/pep-0249/) specification, the standard interface for database access in Python.
+>
+> Each database provider (Postgres, Snowflake, DuckDB, etc.) ships its own hook that inherits from `DbApiHook` and wraps the native database driver. As long as the provider package is installed and implements a proper `DbApiHook` subclass, you can use this operator with any compliant database.
+
+> [!TIP]
+> Learn more about [executing SQL with Airflow](hhttps://www.astronomer.io/docs/learn/airflow-sql).
+
+## Add the report generation task
+
+The second task aggregates booking data into a daily report per planet.
+
+1. Open `include/sql/report.sql` and review the query. Notice that it expects a `$reportDate` parameter and uses an upsert pattern (`ON CONFLICT ... DO UPDATE`) to handle re-runs gracefully.
+2. The query is missing the `total_paid_usd` column. Find the `-- TODO` comment in the SQL file and add the missing aggregation following the pattern of the other columns.
+3. Create a `SQLExecuteQueryOperator` with task_id `generate_report` that:
+    - Uses the `report.sql` file
+    - Passes the logical date formatted as `YYYY-MM-DD` as a parameter named `reportDate`
+
+    Unlike the previous task which used `params` for Jinja templating, this task needs to use `parameters` to pass values directly to the database driver (for DuckDB's `$variable` syntax).
+
+> [!TIP]
+> You need to find the right Airflow template variable for the formatted logical date. See the [templates reference](https://airflow.apache.org/docs/apache-airflow/stable/templates-ref.html).
+
+## Add data validation
+
+Before publishing the report, validate that the data meets quality expectations.
+
+1. Add a `SQLColumnCheckOperator` task:
+
+    ```python
+    _validate_report = SQLColumnCheckOperator(
+        task_id="validate_report",
+        conn_id=_DUCKDB_CONN_ID,
+        table="daily_planet_report",
+        column_mapping={
+            "planet_name": {
+                "null_check":     {"equal_to": 0},
+                "distinct_check": {"geq_to": 3},
+            },
+            "total_passengers": {
+                "null_check":     {"equal_to": 0},
+                "min":            {"geq_to": 1},
+            }
+        },
+        outlets=Asset("daily_report")
+    )
+    ```
+
+    The `outlets` parameter declares that this task produces the `daily_report` asset. Downstream Dags can subscribe to this asset to trigger automatically when new data is available.
+
+> [!TIP]
+> Learn more about [data quality checks](https://www.astronomer.io/docs/learn/airflow-sql-data-quality) and [assets](https://www.astronomer.io/docs/learn/airflow-datasets).
+
+## Wire up the tasks
+
+Use `chain()` to define the execution order.
+
+1. At the end of the `daily_report()` function, add:
+
+    ```python
+    chain(
+        _ingest_data,
+        _generate_report,
+        _validate_report
+    )
+    ```
+
+## Test your Dag
+
+1. In the Astro IDE, click _Sync to Test_ to deploy your changes.
+2. Open the Airflow UI and trigger the `daily_report` Dag.
+3. Verify all tasks complete successfully.
+4. Check the _assets_ view in Airflow to confirm the `daily_report` asset was updated.
+
+## See data validation in action
+
+To understand how data quality checks protect your pipeline, let's intentionally trigger a failure.
+
+1. In your `_validate_report` task, change the `distinct_check` threshold from `3` to `42`:
+
+    ```python
+    "distinct_check": {"geq_to": 42},
+    ```
+
+2. Sync and trigger the Dag again.
+3. Observe that the `validate_report` task fails. Open the task logs to see the validation error message.
+4. Notice that the `daily_report` asset was **not** updated this time, the quality gate prevented bad data from being published.
+5. Change the threshold back to `3`, sync, and run the Dag once more to confirm it passes.
+
+---
+
+# Exercise 2: Asset-aware scheduling
+
+tbd
+
+_Add next exercise here._

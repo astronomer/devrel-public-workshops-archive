@@ -40,3 +40,19 @@ CREATE TABLE IF NOT EXISTS payments (
   paid_at     TIMESTAMP NOT NULL,
   amount_usd  INTEGER NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS daily_planet_report (
+  report_date              DATE NOT NULL,
+  planet_name              VARCHAR NOT NULL,
+
+  total_passengers         BIGINT NOT NULL,
+  active_trips             BIGINT NOT NULL,
+  completed_trips          BIGINT NOT NULL,
+
+  total_gross_fare_usd     BIGINT NOT NULL,
+  total_discounts_usd      BIGINT NOT NULL,
+  total_net_fare_usd       BIGINT NOT NULL,
+  total_paid_usd           BIGINT NOT NULL,
+
+  PRIMARY KEY (report_date, planet_name)
+);
