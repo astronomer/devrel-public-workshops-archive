@@ -17,6 +17,20 @@ Throughout this workshop, you will work as a data engineer at AstroTrips. Your t
 
 The underlying database used for AstroTips is DuckDB and it comes with a set of base tables and might be extended with additional tables depending on the workshop.
 
+## Interact with DuckDB via UI (optional)
+
+The AstroTrips DuckDB file is created by running the included `setup` Dag once manually. Once the file exists, you can interact with it via the DuckDB CLI using the built-in UI.
+
+See [DuckDB CLI installation instructions](https://duckdb.org/install).
+
+Once the DuckDB CLI is available and the database file exists, run:
+
+```sh
+duckdb -ui include/astrotrips.duckdb
+```
+
+![DuckDB UI](doc/duckdb-ui.png)
+
 ## Using MotherDuck (optional)
 
 This project is configured to use DuckDB with a local database file stored in `include/astrotrips.duckdb`. While this setup is sufficient for this scenario, it has specific limitations:

@@ -25,7 +25,7 @@ def setup():
     )
 
     _fixtures = SQLExecuteQueryOperator(
-        task_id="fixxtures",
+        task_id="fixtures",
         conn_id=_DUCKDB_CONN_ID,
         sql="fixtures.sql"
     )
