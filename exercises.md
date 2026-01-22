@@ -75,7 +75,10 @@ The final setup step is to start a test deployment (a fully functional Airflow e
 
     ![Trigger setup Dag](doc/screenshot-trigger-setup-dag.png)
 
-**Once the Dag run completes successfully, your database is ready.** Running this Dag resets and re-creates the database. If you encounter any issues in the following exercises, simply run this Dag again.
+**Once the Dag run completes successfully, your database is ready.**
+
+> [!IMPORTANT]
+> Running this Dag resets and re-creates the database. If you encounter any issues in the following exercises, simply run this Dag again.
 
 ---
 
