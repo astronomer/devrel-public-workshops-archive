@@ -2,7 +2,7 @@ from airflow.configuration import AIRFLOW_HOME
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from airflow.sdk import dag, chain
 
-from include.utils import MissionControlOperator
+from include.mission_control import MissionControlOperator
 
 _DUCKDB_CONN_ID = "duckdb_astrotrips"
 

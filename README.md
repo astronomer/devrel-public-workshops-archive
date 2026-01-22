@@ -90,7 +90,7 @@ These branches extend the base scenario with workshop-specific components, Dags,
 
 ## Gamification
 
-The base project comes with a custom `MissionControlOperator` ([include/utils.py](include/utils.py)).
+The base project comes with a custom `MissionControlOperator` ([include/mission_control.py](include/mission_control.py)).
 
 If gamification is required (for example to hand out swag during a workshop), an additional exercise can be added at the very end. In this exercise, participants are asked to add the `MissionControlOperator` as the final task in their Dag. If multiple Dags are part of the workshop, just select one specific of them.
 
