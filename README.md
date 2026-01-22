@@ -20,6 +20,9 @@ The underlying database used for AstroTips is DuckDB and it comes with a set of 
 
 ## Using MotherDuck (optional)
 
+> [!CAUTION]
+> This optional step can be skipped for regular workshop participation. It is intended for advanced exploration after the workshop.
+
 This project is configured to use DuckDB with a local database file stored in `include/astrotrips.duckdb`. While this setup is sufficient for this scenario, it has specific limitations:
 
 - **No concurrent access:** The database cannot be written to by multiple concurrent processes.
@@ -44,11 +47,12 @@ AIRFLOW_CONN_DUCKDB_ASTROTRIPS='{
 
 ## Using Astro CLI (optional)
 
+> [!CAUTION]
+> This optional step can be skipped for regular workshop participation. It is intended for advanced exploration after the workshop.
+
 Workshops can also be worked on using the Astro CLI and a local, containerized Airflow setup. Copy `.env.dist` to `.env`, then adjust the configuration values if needed. You can start the project with `astro dev start`. However, these workshops are primarily designed for use with the Astro IDE.
 
 ## Workshop repo structure
-
-_todo: this section belongs to `main` but while this new base in development, it is kept here._
 
 This repository uses branches to represent individual workshops.
 
@@ -70,7 +74,8 @@ which contains all shared components for the scenario, such as:
 - setup DAGs and helper functions
 - reusable operators
 
-**This branch is not a runnable workshop on its own. It serves as a template and foundation for all scenario-based workshops.**
+> [!Warning]
+> This branch is not a runnable workshop on its own. It serves as a template and foundation for all scenario-based workshops.
 
 Individual workshops are created as separate branches derived from `_base`, for example:
 ```
