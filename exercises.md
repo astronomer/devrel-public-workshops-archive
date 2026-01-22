@@ -17,7 +17,6 @@ While a deep understanding of the Astro platform is not required, here is a quic
     - You should now see the Astro platform UI.
 
 2. Open the _Astro IDE_ from the left navigation and select _Connect Git project..._
-
 3. Under _Select a Git provider for manual configuration_, select _GitHub_ and enter the following details:
 
     - **ACCOUNT**: `astronomer`
@@ -38,7 +37,6 @@ While a deep understanding of the Astro platform is not required, here is a quic
 This workshop relies on a DuckDB database. To ensure your test environments can connect to it, the next step is to create a workspace-wide connection.
 
 1. In Astro, navigate to _Environment_ → _Connections_ and click the _+ Connection_ button.
-
 2. In the dialog, select _Generic_ and enter the following details:
 
     - Set **AUTOMATICALLY LINK TO ALL DEPLOYMENTS** to _On_
@@ -50,18 +48,19 @@ This workshop relies on a DuckDB database. To ensure your test environments can 
 
 3. Click _Create Connection_.
 
+> [!TIP]
+> Learn more about [Airflow connections](https://www.astronomer.io/docs/learn/connections).
+
 ## Start the Test Deployment and Run the Setup Dag
 
 The final setup step is to start a test deployment (a fully functional Airflow environment) and run the `setup` Dag, which creates the DuckDB database with tables and sample data for the following exercises.
 
 1. Navigate to the _Astro IDE_ and click _Start Test Deployment_ in the top right corner.
-
 2. While the deployment is starting, click the dropdown next to _Sync to Test_ and select _Test Deployment Details_.
 
     ![Open test deployment details](doc/screenshot-open-deployment-details.png)
 
 3. Navigate to the _Environment_ tab and click _Edit Deployment Variables_.
-
 4. In the popup, remove the `AIRFLOW__SCHEDULER__USE_JOB_SCHEDULE` variable to enable cron scheduling for the test deployment.
 
 5. Click _Update Environment Variables_.

@@ -1,8 +1,9 @@
 # Workshop base
 
+This is the base repository for workshop development. It will be updated with more common elements and future Airflow releases. Use this repository as the base branch when developing a new workshop.
+
 ## Prerequisites
 
-- Copy `.env.dist` to `.env`.
 - Access to the [Astro IDE](https://www.astronomer.io/product/ide/).
 
 ## Scenario: AstroTrips
@@ -16,20 +17,6 @@ Throughout this workshop, you will work as a data engineer at AstroTrips. Your t
 ![AstroTrips](doc/astrotrips.png)
 
 The underlying database used for AstroTips is DuckDB and it comes with a set of base tables and might be extended with additional tables depending on the workshop.
-
-## Interact with DuckDB via UI (optional)
-
-The AstroTrips DuckDB file is created by running the included `setup` Dag once manually. Once the file exists, you can interact with it via the DuckDB CLI using the built-in UI.
-
-See [DuckDB CLI installation instructions](https://duckdb.org/install).
-
-Once the DuckDB CLI is available and the database file exists, run:
-
-```sh
-duckdb -ui include/astrotrips.duckdb
-```
-
-![DuckDB UI](doc/duckdb-ui.png)
 
 ## Using MotherDuck (optional)
 
@@ -54,6 +41,10 @@ AIRFLOW_CONN_DUCKDB_ASTROTRIPS='{
 ```
 
 > **Note:** Ensure you also update any other references to the local DuckDB file path, such as `include/connections.yaml` if applicable.
+
+## Using Astro CLI (optional)
+
+Workshops can also be worked on using the Astro CLI and a local, containerized Airflow setup. Copy `.env.dist` to `.env`, then adjust the configuration values if needed. You can start the project with `astro dev start`. However, these workshops are primarily designed for use with the Astro IDE.
 
 ## Workshop repo structure
 
@@ -128,3 +119,20 @@ Since the clearance code is derived from the Dag structure and requires the work
 For each workshop:
 - remove unnecessary parts of this `README` to focus on the scenario introduction.
 - fill out the [exercises.md](exercises.md) to have a document fully focused on the actionable workshop exercises.
+
+### Conventions
+
+- Use numbered lists to indicate actual actions the participants has to do something.
+- Use callouts to share learning resources or indicate important information:
+
+**Link to learning resources:**
+```
+> [!TIP]
+> Learn more about [Airflow connections](https://www.astronomer.io/docs/learn/connections).
+```
+
+**Important steps / information:**
+```
+> [!IMPORTANT]
+> If you create a fork of this repository, ensure to never commit any connection credentials.
+```
