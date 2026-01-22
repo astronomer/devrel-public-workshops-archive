@@ -1,14 +1,14 @@
-# Apache Airflow - ELT/ETL workshop
+# Apache Airflow - ELT/ETL Workshop
 
-Welcome to the Apache Airflow ELT/ETL workshop. In this workshop, you will explore representative ELT- and ETL-workflows in a real Airflow environment.
+Welcome to the Apache Airflow ELT/ETL workshop! You will build and orchestrate data pipelines in a real Airflow environment using a practical scenario.
 
-What you will learn:
-* Author and orchestrate data pipelines with a practical scenario.
-* Running parameterized SQL queries.
-* Asset-aware scheduling.
-* Dynamic task mapping for efficient data processing.
-* Data quality checks as part of your pipeline with Apache Airflow.
-* Airflow beyond orchestration, human interaction via human-in-the-loop.
+**What you will learn:**
+
+- Authoring data pipelines with parameterized SQL queries.
+- Asset-aware scheduling for data dependencies.
+- Dynamic task mapping for scalable data processing.
+- Data quality checks as part of your pipeline.
+- Human-in-the-loop patterns for manual intervention.
 
 ## Prerequisites
 
