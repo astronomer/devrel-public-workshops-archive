@@ -613,7 +613,7 @@ _hitl_input = HITLEntryOperator(
 
 ## Add tasks to apply and display the update
 
-1. First, add a task to extract the parameters from the HITL output:
+1. First, add a task to extract the parameters from the HITL output and store the result in a variable:
 
 ```python
 @task
@@ -623,6 +623,8 @@ def build_update_params(hitl_output):
         "new_fare": hitl_output["params_input"]["new_fare"],
         "route_id": hitl_output["params_input"]["route_id"],
     }
+
+_update_params = build_update_params(_hitl_input.output)
 ```
 
 2. Then add a `SQLExecuteQueryOperator` for the `UPDATE` query, passing the params via `parameters`:
@@ -670,9 +672,6 @@ def print_updated_fares(rows):
 1. Finally, wire up all tasks by defining the dependencies:
 
 ```python
-_formatted_fares = format_fares(_get_fares.output)
-_update_params = build_update_params(_hitl_input.output)
-
 chain(
     _formatted_fares,
     _hitl_input,
