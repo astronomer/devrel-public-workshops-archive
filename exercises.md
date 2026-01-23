@@ -191,7 +191,7 @@ The second task aggregates booking data into a daily report per planet.
     - Uses the `report.sql` file
     - Passes the **logical date** formatted as `YYYY-MM-DD` as a parameter named `reportDate`
 
-    Unlike the previous task which used `params` for Jinja templating, this task needs to use `parameters` to pass values directly to the database driver (for DuckDB's `$variable` syntax).
+    Unlike the previous task which used `params` for Jinja templating, **this task needs to use `parameters` to pass values directly to the database driver** (for DuckDB's `$variable` syntax).
 
 > [!TIP]
 > You need to find the right Airflow template variable for the formatted logical date. See the [templates reference](https://airflow.apache.org/docs/apache-airflow/stable/templates-ref.html).
@@ -247,7 +247,7 @@ Use `chain()` to define the execution order.
 1. In the Astro IDE, click _Sync to Test_ to deploy your changes.
 2. Open the Airflow UI and trigger the `daily_report` Dag.
 3. Verify all tasks complete successfully.
-4. Check the _assets_ view in Airflow to confirm the `daily_report` asset was updated.
+4. Check the _Assets_ view in Airflow (from the navigation on the left) and open the `daily_report` asset, to confirm the asset update shows under _Asset Events_.
 
 ## See data validation in action
 
