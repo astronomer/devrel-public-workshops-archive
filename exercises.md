@@ -395,7 +395,7 @@ Create a task that formats and prints the report. In a real scenario, this could
 1. Sync your changes to the test deployment.
 2. In the Airflow UI, navigate to the _Dags_ view.
 3. Trigger the `daily_report` Dag from Exercise 1.
-4. Once `daily_report` completes, observe that `publish_report` is triggered automatically.
+4. Once the quality check in `daily_report` completes, observe that `publish_report` is triggered automatically.
 5. Open the `publish_report` Dag run and check the logs of the `print_report` task to see the formatted output.
 
 ---
