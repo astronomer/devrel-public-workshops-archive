@@ -296,9 +296,10 @@ The workshop provides a custom `MissionControlOperator`, which generates an inte
     ```
 
 4. Sync your changes, trigger your `daily_report` Dag, and check the task logs so see the clearance code.
-5. Post the code into the chat, so the workshop host can validate it.
+5. Post the code into the chat, so the workshop host can verify it.
 
-The first 3 that finish this challenge successfully receive a gift from Astronomer!
+> [!IMPORTANT]
+> The first 3 that finish this challenge successfully receive a gift from Astronomer!
 
 ---
 
