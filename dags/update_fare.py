@@ -59,7 +59,12 @@ def update_fare():
     _get_updated_fares = SQLExecuteQueryOperator(
         task_id="get_updated_fares",
         conn_id=_DUCKDB_CONN_ID,
-        sql=_FARES_QUERY,
+        sql="""
+            SELECT r.route_id, p.planet_name, r.base_fare_usd
+            FROM routes r
+            JOIN planets p ON p.planet_id = r.destination_id
+            ORDER BY r.route_id
+        """,
     )
 
     @task

@@ -6,9 +6,9 @@ _DUCKDB_CONN_ID = "duckdb_astrotrips"
 
 @dag(
     schedule="@daily",
-    tags=["astrotrips", "elt"],
+    tags=["astrotrips", "ingest"],
 )
-def weather_elt():
+def weather_ingest():
 
     _get_planets = SQLExecuteQueryOperator(
         task_id="get_planets",
@@ -50,4 +50,4 @@ def weather_elt():
     chain(rows, _insert_rows)
 
 
-weather_elt()
+weather_ingest()
