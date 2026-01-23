@@ -247,8 +247,152 @@ To understand how data quality checks protect your pipeline, let's intentionally
 
 ---
 
+# Challenge: Mission control
+
+It is time for a challenge.
+
+The workshop provides a custom `MissionControlOperator`, which generates an interstellar clearance code based on your implementation. Only if you finished all tasks successfully until here, including using the correct task IDs and dependencies, the code will be correct.
+
+1. Add the following import to your `daily_report.py` implementation:
+
+    ```py
+    from include.mission_control import MissionControlOperator
+    ```
+
+2. Create an instance of the operator within your `@dag` function, and assign the task ID `mission_control`:
+
+    ```py
+    _mission_control = MissionControlOperator(task_id="mission_control")
+    ```
+
+3. Add the task as a last step in your Dag:
+
+    ```py
+    chain(
+        _ingest_data,
+        _generate_report,
+        _validate_report,
+        _mission_control
+    )
+    ```
+
+4. Sync your changes, trigger your `daily_report` Dag, and check the task logs so see the clearance code.
+5. Post the code into the chat, so the workshop host can validate it.
+
+The first 3 that finish this challenge successfully receive a gift from Astronomer!
+
+---
+
 # Exercise 2: Asset-aware scheduling
+
+In this exercise, you will create a second Dag that is triggered automatically when the `daily_report` asset is updated. Since the `SQLColumnCheckOperator` updates the `daily_report` asset, it means every time data has been checked, the asset is updated and the second Dag will be triggered. This pattern decouples data producers from consumers.
+
+**What you will learn:**
+
+- Scheduling a Dag based on Asset updates.
+- Pulling data from upstream tasks via XCom.
+
+## Create the Dag file
+
+1. In the Astro IDE, create a new file `dags/publish_report.py`.
+2. Add the following imports:
+
+    ```python
+    from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
+    from airflow.sdk import dag, task, chain, Asset
+
+    _DUCKDB_CONN_ID = "duckdb_astrotrips"
+    ```
+
+3. Define the Dag with asset-aware scheduling:
+
+    ```python
+    @dag(
+        schedule=Asset("daily_report"),
+        tags=["astrotrips", "reporting"]
+    )
+    def publish_report():
+        pass
+
+    publish_report()
+    ```
+
+    By passing an `Asset` to the `schedule` parameter, this Dag will trigger whenever the `daily_report` Asset is updated by the upstream Dag.
+
+> [!TIP]
+> Learn more about [Asset-aware scheduling](https://www.astronomer.io/docs/learn/airflow-datasets).
+
+## Add the query task
+
+Fetch the latest report data from the database.
+
+1. Inside the `publish_report()` function, add:
+
+    ```python
+    _get_report = SQLExecuteQueryOperator(
+        task_id="get_report",
+        conn_id=_DUCKDB_CONN_ID,
+        sql="SELECT * FROM daily_planet_report WHERE report_date = (SELECT MAX(report_date) FROM daily_planet_report)"
+    )
+    ```
+
+    Since this Dag is triggered by an asset, there is no logical date. Which means, we can't use `{{ ds }}`. Instead, the query fetches the most recent report.
+
+## Add a Python task
+
+Create a task that formats and prints the report. In a real scenario, this could send an email, update a dashboard, or call an external API.
+
+1. Add the following `@task`-decorated function inside the Dag:
+
+    ```python
+    @task
+    def print_report(ti=None):
+        from include.utils import print_report_row
+
+        rows = ti.xcom_pull(task_ids="get_report") or []
+
+        print("::group::Daily Planet Report")
+        print("Planet | Passengers | Active | Done | Gross USD | Discount | Net USD")
+        print("-" * 65)
+
+        for row in rows:
+            print_report_row(row)
+
+        print("::endgroup::")
+    ```
+
+    The `ti.xcom_pull()` method retrieves the query results from the upstream task. XCom (cross-communication) is Airflow's mechanism for passing data between tasks.
+
+> [!TIP]
+> Learn more about [passing data between tasks](https://www.astronomer.io/docs/learn/airflow-passing-data-between-tasks).
+
+## Wire up the tasks
+
+1. At the end of the `publish_report()` function, add:
+
+    ```python
+    chain(
+        _get_report,
+        print_report()
+    )
+    ```
+
+## Test the Asset-triggered Dag
+
+1. Sync your changes to the test deployment.
+2. In the Airflow UI, navigate to the _Dags_ view.
+3. Trigger the `daily_report` Dag from Exercise 1.
+4. Once `daily_report` completes, observe that `publish_report` is triggered automatically.
+5. Open the `publish_report` Dag run and check the logs of the `print_report` task to see the formatted output.
+
+---
+
+# Exercise 4: ELT
 
 tbd
 
-_Add next exercise here._
+---
+
+# Exercise 5: Human-in-the-loop
+
+tbd

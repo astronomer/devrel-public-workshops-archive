@@ -3,6 +3,8 @@ from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator, 
 from airflow.sdk import dag, task, chain, Asset
 from pendulum import datetime
 
+from include.mission_control import MissionControlOperator
+
 _DUCKDB_CONN_ID = "duckdb_astrotrips"
 
 @dag(
@@ -44,10 +46,13 @@ def daily_report():
         outlets=Asset("daily_report")
     )
 
+    _mission_control = MissionControlOperator(task_id="mission_control")
+
     chain(
         _ingest_data,
         _generate_report,
-        _validate_report
+        _validate_report,
+        _mission_control
     )
 
 daily_report()

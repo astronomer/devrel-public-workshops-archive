@@ -1,4 +1,4 @@
-from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator, SQLColumnCheckOperator
+from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from airflow.sdk import dag, task, chain, Asset
 
 _DUCKDB_CONN_ID = "duckdb_astrotrips"
