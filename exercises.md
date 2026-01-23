@@ -387,12 +387,291 @@ Create a task that formats and prints the report. In a real scenario, this could
 
 ---
 
-# Exercise 4: ELT
+# Exercise 4: Dynamic task mapping
 
-tbd
+In this exercise, you will build an ingest pipeline that fetches weather data from an external API for all planets. You'll use **dynamic task mapping** to parallelize the API calls at runtime.
+
+> [!NOTE]
+> This is an Extract-Load (EL) pipeline, not full ELT. We extract from the API and load into the database. A true ELT would add a transform step *after* loading to create derived tables.
+
+**What you will learn:**
+
+- Writing a Python `@task` to load data from an API.
+- Using `.expand()` to dynamically create tasks at runtime.
+- Collecting results from mapped tasks for downstream processing.
+
+## Create the Dag file
+
+1. Create `dags/weather_ingest.py` with the following structure:
+
+    ```python
+    from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator, SQLInsertRowsOperator
+    from airflow.sdk import chain, dag, task
+
+    _DUCKDB_CONN_ID = "duckdb_astrotrips"
+
+
+    @dag(
+        schedule="@daily",
+        tags=["astrotrips", "ingest"],
+    )
+    def weather_ingest():
+        pass
+
+
+    weather_ingest()
+    ```
+
+## Add the extract tasks
+
+1. Add a `SQLExecuteQueryOperator` to get all planet IDs, then a task to extract them:
+
+    ```python
+    _get_planets = SQLExecuteQueryOperator(
+        task_id="get_planets",
+        conn_id=_DUCKDB_CONN_ID,
+        sql="SELECT DISTINCT planet_id FROM planets",
+    )
+
+    @task
+    def extract_planet_ids(query_result):
+        """Extract planet IDs from query result rows."""
+        return [row[0] for row in query_result]
+    ```
+
+2. Add a task to fetch weather for a single planet. This task will be dynamically mapped:
+
+    ```python
+    @task
+    def fetch_weather(planet_id: int, logical_date=None):
+        from include.weather_api import get_planet_weather
+        return get_planet_weather(planet_id, logical_date.date())
+    ```
+
+    The `logical_date` parameter is automatically injected by Airflow.
+
+## Add the load task
+
+We will use a `SQLInsertRowsOperator` to insert the rows into a `planet_weather` table. However, this operator expects tuples.
+
+1. Add the following task to transform the weather data:
+
+```python
+@task
+def prepare_rows(weather_data: list[dict]):
+    """Transform weather dicts to tuples for SQLInsertRowsOperator."""
+    return [
+        (w["planet_id"], w["reading_date"], w["temperature_c"], w["storm_risk"], w["visibility"])
+        for w in weather_data
+    ]
+```
+
+2. Then add the `SQLInsertRowsOperator` with a `preoperator` to make it idempotent:
+
+```python
+_insert_rows = SQLInsertRowsOperator(
+    task_id="load_weather",
+    conn_id=_DUCKDB_CONN_ID,
+    table_name="planet_weather",
+    columns=["planet_id", "reading_date", "temperature_c", "storm_risk", "visibility"],
+    rows=rows,
+    preoperator="DELETE FROM planet_weather WHERE reading_date = '{{ ds }}';",
+)
+```
+
+> [!NOTE]
+> The `preoperator` deletes existing records for the current date before inserting, ensuring idempotent re-runs. The `planet_weather` table must already exist (created by the `setup` Dag).
+
+## Wire up with dynamic task mapping
+
+1. At the end of your Dag function, connect the tasks using `.expand()`:
+
+```python
+planet_ids = extract_planet_ids(_get_planets.output)
+weather_data = fetch_weather.expand(planet_id=planet_ids)
+rows = prepare_rows(weather_data)
+
+chain(rows, _insert_rows)
+```
+
+The `.expand(planet_id=planet_ids)` creates one `fetch_weather` task instance per planet. When `prepare_rows` receives `weather_data`, Airflow automatically collects all outputs from the mapped tasks into a list.
+
+> [!TIP]
+> Learn more about [dynamic task mapping](https://www.astronomer.io/docs/learn/dynamic-tasks).
+
+## Test your Dag
+
+1. Sync and trigger the `weather_ingest` Dag.
+2. In the Graph view, observe the `fetch_weather` task shows brackets `[ ]` indicating it's mapped.
+3. Click on `fetch_weather` to see individual mapped task instances.
+4. Verify the `planet_weather` table was created with weather data.
 
 ---
 
 # Exercise 5: Human-in-the-loop
 
-tbd
+In this exercise, you will build a Dag that pauses for human input using a human-in-the-loop operator. The workflow lets an operator update a planet-to-planet route's base fare.
+
+**What you will learn:**
+
+- Using `HITLEntryOperator` to collect user input mid-workflow.
+- Passing HITL output to downstream tasks.
+
+## Create the Dag file
+
+1. Create `dags/update_fare.py` with the following structure:
+
+    ```python
+    from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
+    from airflow.providers.standard.operators.hitl import HITLEntryOperator
+    from airflow.sdk import dag, task, chain, Param
+
+    _DUCKDB_CONN_ID = "duckdb_astrotrips"
+
+
+    @dag(tags=["astrotrips", "hitl"])
+    def update_fare():
+        pass
+
+
+    update_fare()
+    ```
+
+> [!NOTE]
+> This Dag is meant to run manually, so it has no `schedule`. Since Airflow 3, the default value for `schedule` is `None`, so we do not need to set it explicitly.
+
+## Add an operator to fetch current fares
+
+1. Add a `SQLExecuteQueryOperator` to fetch the current route fares:
+
+```python
+_get_fares = SQLExecuteQueryOperator(
+    task_id="get_current_fares",
+    conn_id=_DUCKDB_CONN_ID,
+    sql="""
+        SELECT r.route_id, p.planet_name, r.base_fare_usd
+        FROM routes r
+        JOIN planets p ON p.planet_id = r.destination_id
+        ORDER BY r.route_id
+    """,
+)
+```
+
+2. Add a task to format the results for display in the HITL body:
+
+```python
+@task
+def format_fares(rows):
+    """Format fare rows for display in HITL body."""
+    return "\n".join([f"Route {r[0]}: {r[1]} - ${r[2]}" for r in rows])
+```
+
+## Add the HITL input task
+
+The `HITLEntryOperator` pauses the Dag and waits for human input via the Airflow UI.
+
+1. Add the following task to the Dag:
+
+```python
+_hitl_input = HITLEntryOperator(
+    task_id="input_new_fare",
+    subject="Update route base fare",
+    body="Current fares:\n\n{{ ti.xcom_pull(task_ids='format_fares') }}",
+    params={
+        "route_id": Param(1, type="integer", description="Route ID to update"),
+        "new_fare": Param(1000, type="integer", description="New base fare in USD"),
+    },
+)
+```
+
+> [!NOTE]
+> The `body` uses Jinja templating to display formatted fares. The `params` define form fields for user input.
+
+## Add tasks to apply and display the update
+
+1. First, add a task to extract the parameters from the HITL output:
+
+```python
+@task
+def build_update_params(hitl_output):
+    """Extract params from HITL output for the UPDATE query."""
+    return {
+        "new_fare": hitl_output["params_input"]["new_fare"],
+        "route_id": hitl_output["params_input"]["route_id"],
+    }
+```
+
+2. Then add a `SQLExecuteQueryOperator` for the `UPDATE` query, passing the params via `parameters`:
+
+```python
+_apply_update = SQLExecuteQueryOperator(
+    task_id="apply_fare_update",
+    conn_id=_DUCKDB_CONN_ID,
+    sql="UPDATE routes SET base_fare_usd = $new_fare WHERE route_id = $route_id",
+    parameters=_update_params,
+)
+```
+
+3. Add another task to fetch the updated fares:
+
+```python
+_get_updated_fares = SQLExecuteQueryOperator(
+    task_id="get_updated_fares",
+    conn_id=_DUCKDB_CONN_ID,
+    sql="""
+        SELECT r.route_id, p.planet_name, r.base_fare_usd
+        FROM routes r
+        JOIN planets p ON p.planet_id = r.destination_id
+        ORDER BY r.route_id
+    """,
+)
+```
+
+4. Add a task to display the results:
+
+```python
+@task
+def print_updated_fares(rows):
+    """Print the updated fares to logs."""
+    print("::group::Updated Route Fares")
+    print("Route ID | Destination | Base Fare")
+    print("-" * 40)
+    for row in rows:
+        print(f"{row[0]:8} | {row[1]:11} | ${row[2]}")
+    print("::endgroup::")
+```
+
+## Wire up the tasks
+
+1. Finally, wire up all tasks by defining the dependencies:
+
+```python
+_formatted_fares = format_fares(_get_fares.output)
+_update_params = build_update_params(_hitl_input.output)
+
+chain(
+    _formatted_fares,
+    _hitl_input,
+    _update_params,
+    _apply_update,
+    _get_updated_fares,
+    print_updated_fares(_get_updated_fares.output)
+)
+```
+
+> [!NOTE]
+> Note how `_hitl_input.output` passes the HITL response to `build_update_params`, and `.output` is used to pass query results to tasks.
+
+## Test the HITL workflow
+
+1. Sync and trigger the `update_fare` Dag.
+2. The Dag pauses at `input_new_fare`. Click on the task and open the **Required Actions** tab.
+3. Enter a route ID and new fare, then click **Submit**.
+4. The Dag continues. Check the `print_updated_fares` task logs to see the updated fares.
+
+> [!TIP]
+> Learn more about [human-in-the-loop workflows](https://www.astronomer.io/docs/learn/airflow-human-in-the-loop).
+
+---
+
+Congratulations! You've reached the end of the workshop. We recommend checking out the linked resources and continuing to extend your project during your Astro trial.

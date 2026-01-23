@@ -5,10 +5,7 @@ from airflow.sdk import dag, task, chain, Param
 _DUCKDB_CONN_ID = "duckdb_astrotrips"
 
 
-@dag(
-    schedule=None,
-    tags=["astrotrips", "hitl"],
-)
+@dag(tags=["astrotrips", "hitl"])
 def update_fare():
 
     _get_fares = SQLExecuteQueryOperator(
