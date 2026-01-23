@@ -185,7 +185,7 @@ The second task aggregates booking data into a daily report per planet.
 2. The query is missing the `total_paid_usd` column. Find the `-- TODO` comment in the SQL file and add the missing aggregation following the pattern of the other columns.
 3. Create a `SQLExecuteQueryOperator` with task_id `generate_report` that:
     - Uses the `report.sql` file
-    - Passes the logical date formatted as `YYYY-MM-DD` as a parameter named `reportDate`
+    - Passes the **logical date** formatted as `YYYY-MM-DD` as a parameter named `reportDate`
 
     Unlike the previous task which used `params` for Jinja templating, this task needs to use `parameters` to pass values directly to the database driver (for DuckDB's `$variable` syntax).
 
