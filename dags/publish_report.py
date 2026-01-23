@@ -3,6 +3,7 @@ from airflow.sdk import dag, task, chain, Asset
 
 _DUCKDB_CONN_ID = "duckdb_astrotrips"
 
+
 @dag(
     schedule=Asset("daily_report"),
     tags=["astrotrips", "reporting"]
@@ -35,5 +36,6 @@ def publish_report():
         _get_report,
         print_report()
     )
+
 
 publish_report()

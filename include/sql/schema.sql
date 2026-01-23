@@ -56,3 +56,12 @@ CREATE TABLE IF NOT EXISTS daily_planet_report (
 
   PRIMARY KEY (report_date, planet_name)
 );
+
+CREATE TABLE IF NOT EXISTS planet_weather (
+    planet_id     INTEGER NOT NULL,
+    reading_date  DATE NOT NULL,
+    temperature_c DOUBLE NOT NULL,
+    storm_risk    DOUBLE NOT NULL,
+    visibility    VARCHAR NOT NULL,
+    PRIMARY KEY (planet_id, reading_date)
+);

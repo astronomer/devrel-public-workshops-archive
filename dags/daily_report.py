@@ -7,6 +7,7 @@ from include.mission_control import MissionControlOperator
 
 _DUCKDB_CONN_ID = "duckdb_astrotrips"
 
+
 @dag(
     schedule="@daily",
     start_date=datetime(2026, 1, 1),
@@ -54,5 +55,6 @@ def daily_report():
         _validate_report,
         _mission_control
     )
+
 
 daily_report()
