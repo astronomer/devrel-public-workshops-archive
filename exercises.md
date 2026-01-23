@@ -459,7 +459,7 @@ In this exercise, you will build an ingest pipeline that fetches weather data fr
         return [row[0] for row in query_result]
     ```
 
-2. Add a task to fetch weather for a single planet. This task will be dynamically mapped:
+2. Add a task to fetch weather for a single planet from the API. This task will be dynamically mapped later to run multiple times in parallel:
 
     ```python
     @task
@@ -468,13 +468,14 @@ In this exercise, you will build an ingest pipeline that fetches weather data fr
         return get_planet_weather(planet_id, logical_date.date())
     ```
 
-    The `logical_date` parameter is automatically injected by Airflow.
+> [!NOTE]
+> The `logical_date` parameter is automatically injected by Airflow.
 
 ## Add the load task
 
 We will use a `SQLInsertRowsOperator` to insert the rows into a `planet_weather` table. However, this operator expects tuples.
 
-1. Add the following task to transform the weather data:
+1. Add the following task to prepare the weather data for the insert operation:
 
 ```python
 @task
@@ -486,7 +487,18 @@ def prepare_rows(weather_data: list[dict]):
     ]
 ```
 
-2. Then add the `SQLInsertRowsOperator` with a `preoperator` to make it idempotent:
+2. Next, we wire up the tasks we have so far, so that we ca use the prepared rows as next step. Add the following dependency definition to your Dag:
+
+```python
+planet_ids = extract_planet_ids(_get_planets.output)
+weather_data = fetch_weather.expand(planet_id=planet_ids)
+rows = prepare_rows(weather_data)
+```
+
+> [!NOTE]
+> The `.expand(planet_id=planet_ids)` creates one `fetch_weather` task instance per planet. When `prepare_rows` receives `weather_data`, Airflow automatically collects all outputs from the mapped tasks into a list.
+
+3. Add the `SQLInsertRowsOperator` with a `preoperator` to make it idempotent:
 
 ```python
 _insert_rows = SQLInsertRowsOperator(
@@ -502,22 +514,11 @@ _insert_rows = SQLInsertRowsOperator(
 > [!NOTE]
 > The `preoperator` deletes existing records for the current date before inserting, ensuring idempotent re-runs. The `planet_weather` table must already exist (created by the `setup` Dag).
 
-## Wire up with dynamic task mapping
-
-1. At the end of your Dag function, connect the tasks using `.expand()`:
+4. Ensure Airflow runs the insert after preparing the rows, by adding the following dependency definition:
 
 ```python
-planet_ids = extract_planet_ids(_get_planets.output)
-weather_data = fetch_weather.expand(planet_id=planet_ids)
-rows = prepare_rows(weather_data)
-
 chain(rows, _insert_rows)
 ```
-
-The `.expand(planet_id=planet_ids)` creates one `fetch_weather` task instance per planet. When `prepare_rows` receives `weather_data`, Airflow automatically collects all outputs from the mapped tasks into a list.
-
-> [!TIP]
-> Learn more about [dynamic task mapping](https://www.astronomer.io/docs/learn/dynamic-tasks).
 
 ## Test your Dag
 
@@ -525,6 +526,9 @@ The `.expand(planet_id=planet_ids)` creates one `fetch_weather` task instance pe
 2. In the Graph view, observe the `fetch_weather` task shows brackets `[ ]` indicating it's mapped.
 3. Click on `fetch_weather` and inspect the task instances, to see the runtime generated, parallel tasks (_one per planet_).
 4. Click on `load_weather` and inspect the logs to verify the number of rows, which have been loaded to the table.
+
+> [!TIP]
+> Learn more about [dynamic task mapping](https://www.astronomer.io/docs/learn/dynamic-tasks).
 
 ---
 
