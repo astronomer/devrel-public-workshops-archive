@@ -673,7 +673,7 @@ chain(
 ```
 
 > [!NOTE]
-> Note how `_hitl_input.output` passes the HITL response to `build_update_params`, and `.output` is used to pass query results to tasks.
+> Note how `_hitl_input.output` passes the HITL response to `build_update_params`, and `.output` is used to pass query results to tasks. This is how to combine the TaskFlow API approach of passing data between tasks with classic operators.
 
 ## Test the HITL workflow
 
