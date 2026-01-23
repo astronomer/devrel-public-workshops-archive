@@ -387,7 +387,7 @@ Create a task that formats and prints the report. In a real scenario, this could
 
 ---
 
-# Exercise 4: Dynamic task mapping
+# Exercise 3: ELT and dynamic task mapping
 
 In this exercise, you will build an ingest pipeline that fetches weather data from an external API for all planets. You'll use **dynamic task mapping** to parallelize the API calls at runtime.
 
@@ -508,7 +508,7 @@ The `.expand(planet_id=planet_ids)` creates one `fetch_weather` task instance pe
 
 ---
 
-# Exercise 5: Human-in-the-loop
+# Exercise 4: Human-in-the-loop
 
 In this exercise, you will build a Dag that pauses for human input using a human-in-the-loop operator. The workflow lets an operator update a planet-to-planet route's base fare.
 
