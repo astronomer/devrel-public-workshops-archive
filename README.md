@@ -13,7 +13,7 @@ Welcome to the Apache Airflow ELT/ETL workshop! You will build and orchestrate d
 
 ## Prerequisites
 
-- Access to the [Astro IDE](https://www.astronomer.io/product/ide/).
+- Access to the [Astro IDE](https://www.astronomer.io/product/ide/). _You don't need to set this up now. It is part of the exercise later._
 
 ## Scenario: AstroTrips
 
