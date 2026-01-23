@@ -516,8 +516,8 @@ The `.expand(planet_id=planet_ids)` creates one `fetch_weather` task instance pe
 
 1. Sync and trigger the `weather_ingest` Dag.
 2. In the Graph view, observe the `fetch_weather` task shows brackets `[ ]` indicating it's mapped.
-3. Click on `fetch_weather` to see individual mapped task instances.
-4. Verify the `planet_weather` table was created with weather data.
+3. Click on `fetch_weather` and inspect the task instances, to see the runtime generated, parallel tasks (_one per planet_).
+4. Click on `load_weather` and inspect the logs to verify the number of rows, which have been loaded to the table.
 
 ---
 
@@ -679,7 +679,7 @@ chain(
 
 1. Sync and trigger the `update_fare` Dag.
 2. The Dag pauses at `input_new_fare`. Click on the task and open the **Required Actions** tab.
-3. Enter a route ID and new fare, then click **Submit**.
+3. Enter a route ID (e.g., `1001`) and new fare, then click **Submit**.
 4. The Dag continues. Check the `print_updated_fares` task logs to see the updated fares.
 
 > [!TIP]
