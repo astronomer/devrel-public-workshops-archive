@@ -581,13 +581,15 @@ _get_fares = SQLExecuteQueryOperator(
 )
 ```
 
-2. Add a task to format the results for display in the HITL body:
+2. Add a task to format the results for display in the HITL body and store the result in a variable, using the output of the previous task:
 
 ```python
 @task
 def format_fares(rows):
     """Format fare rows for display in HITL body."""
     return "\n".join([f"Route {r[0]}: {r[1]} - ${r[2]}" for r in rows])
+
+_formatted_fares = format_fares(_get_fares.output)
 ```
 
 ## Add the HITL input task
