@@ -80,7 +80,7 @@ The final setup step is to start a test deployment (a fully functional Airflow e
 
     ![Change environment variables](doc/screenshot-env-vars.png)
 
-6. Back in the Astro IDE, from the same dropdown menu, select _Open Airflow_.
+6. Back in the Astro IDE, once the test deployment is ready, select _Open Airflow_, from the same dropdown menu.
 
     ![Open Airflow](doc/screenshot-open-airflow.png)
 
@@ -183,6 +183,10 @@ The second task aggregates booking data into a daily report per planet.
 
 1. Open `include/sql/report.sql` and review the query. Notice that it expects a `$reportDate` parameter and uses an upsert pattern (`ON CONFLICT ... DO UPDATE`) to handle re-runs gracefully.
 2. The query is missing the `total_paid_usd` column. Find the `-- TODO` comment in the SQL file and add the missing aggregation following the pattern of the other columns.
+
+> [!NOTE]
+> Open `include/sql/schema.sql` to see the available tables with their schemas.
+
 3. Create a `SQLExecuteQueryOperator` with task_id `generate_report` that:
     - Uses the `report.sql` file
     - Passes the **logical date** formatted as `YYYY-MM-DD` as a parameter named `reportDate`
@@ -192,9 +196,11 @@ The second task aggregates booking data into a daily report per planet.
 > [!TIP]
 > You need to find the right Airflow template variable for the formatted logical date. See the [templates reference](https://airflow.apache.org/docs/apache-airflow/stable/templates-ref.html).
 
+4. Ensure to assign the the operator to a variable called `_generate_report`.
+
 ## Add data validation
 
-Before publishing the report, validate that the data meets quality expectations.
+Before we publish the report, we have to validate that the data meets quality expectations.
 
 1. Add a `SQLColumnCheckOperator` task:
 
