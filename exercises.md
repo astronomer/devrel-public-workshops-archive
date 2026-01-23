@@ -175,7 +175,7 @@ The first task simulates ingesting new booking data by calling a SQL script that
 > Each database provider (Postgres, Snowflake, DuckDB, etc.) ships its own hook that inherits from `DbApiHook` and wraps the native database driver. As long as the provider package is installed and implements a proper `DbApiHook` subclass, you can use this operator with any compliant database.
 
 > [!TIP]
-> Learn more about [executing SQL with Airflow](hhttps://www.astronomer.io/docs/learn/airflow-sql).
+> Learn more about [executing SQL with Airflow](https://www.astronomer.io/docs/learn/airflow-sql).
 
 ## Add the report generation task
 
