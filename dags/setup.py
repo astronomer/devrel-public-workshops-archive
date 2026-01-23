@@ -6,6 +6,7 @@ from include.mission_control import MissionControlOperator
 
 _DUCKDB_CONN_ID = "duckdb_astrotrips"
 
+
 @dag(
     tags=["astrotrips", "setup"],
     template_searchpath=f"{AIRFLOW_HOME}/include/sql"
@@ -31,6 +32,7 @@ def setup():
     )
 
     chain(_cleanup, _schema, _fixtures, MissionControlOperator(task_id="mission_control"))
+
 
 setup_dag = setup()
 
