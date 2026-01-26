@@ -5,7 +5,7 @@
 - [Exercise 0: Astro and Astro IDE](#exercise-0-astro-and-astro-ide)
 - [Exercise 1: Build the daily report Dag](#exercise-1-build-the-daily-report-dag)
 - [Challenge: Mission control](#challenge-mission-control)
-- [Exercise 2: Asset-aware scheduling](#exercise-2-asset-aware-scheduling-for-data-driven-dag-dependencies)
+- [Exercise 2: Asset-aware scheduling for data-driven Dag dependencies](#exercise-2-asset-aware-scheduling-for-data-driven-dag-dependencies)
 - [Exercise 3: ELT and dynamic task mapping](#exercise-3-elt-and-dynamic-task-mapping)
 - [Exercise 4: Human-in-the-loop](#exercise-4-human-in-the-loop)
 
