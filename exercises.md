@@ -74,7 +74,7 @@ This workshop relies on a DuckDB database. To ensure your test environments can 
 The final setup step is to start a test deployment (a fully functional Airflow environment) and run the `setup` Dag, which creates the DuckDB database with tables and sample data for the following exercises.
 
 > [!CAUTION]
-> Do not close the Astro IDE browser tab during the workshop. If you close it, you will need to create a new test deployment.
+> Do not close the Astro IDE browser tab during the workshop. Always use this tab to return to the Astro IDE instead of reopening it to preserve your session. If you close it, you will need to create a new test deployment.
 
 1. Navigate to the _Astro IDE_ and click _Start Test Deployment_ in the top right corner. The deployment takes 3-5 minutes to spin up.
 2. While the deployment is starting, click the dropdown next to _Sync to Test_ and select _Test Deployment Details_.
