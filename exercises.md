@@ -5,7 +5,7 @@
 - [Exercise 0: Astro and Astro IDE](#exercise-0-astro-and-astro-ide)
 - [Exercise 1: Build the daily report Dag](#exercise-1-build-the-daily-report-dag)
 - [Challenge: Mission control](#challenge-mission-control)
-- [Exercise 2: Asset-aware scheduling](#exercise-2-asset-aware-scheduling)
+- [Exercise 2: Asset-aware scheduling](#exercise-2-asset-aware-scheduling-for-data-driven-dag-dependencies)
 - [Exercise 3: ELT and dynamic task mapping](#exercise-3-elt-and-dynamic-task-mapping)
 - [Exercise 4: Human-in-the-loop](#exercise-4-human-in-the-loop)
 
@@ -49,6 +49,11 @@ While a deep understanding of the Astro platform is not required, here is a quic
 
 This workshop relies on a DuckDB database. To ensure your test environments can connect to it, the next step is to create a workspace-wide connection.
 
+> [!NOTE]
+> This step takes place in the main Astro platform UI, not inside the Astro IDE. If you collapsed the sidebar, expand it to navigate.
+
+![Navigate to Connections](doc/screenshot-navigate-connections.png)
+
 1. In Astro, navigate to _Environment_ → _Connections_ and click the _+ Connection_ button.
 2. In the dialog, select _Generic_ and enter the following details:
 
@@ -68,7 +73,10 @@ This workshop relies on a DuckDB database. To ensure your test environments can 
 
 The final setup step is to start a test deployment (a fully functional Airflow environment) and run the `setup` Dag, which creates the DuckDB database with tables and sample data for the following exercises.
 
-1. Navigate to the _Astro IDE_ and click _Start Test Deployment_ in the top right corner.
+> [!CAUTION]
+> Do not close the Astro IDE browser tab during the workshop. If you close it, you will need to create a new test deployment.
+
+1. Navigate to the _Astro IDE_ and click _Start Test Deployment_ in the top right corner. The deployment takes 3-5 minutes to spin up.
 2. While the deployment is starting, click the dropdown next to _Sync to Test_ and select _Test Deployment Details_.
 
     ![Open test deployment details](doc/screenshot-open-deployment-details.png)
@@ -97,7 +105,7 @@ The final setup step is to start a test deployment (a fully functional Airflow e
 
 # Exercise 1: Build the daily report Dag
 
-In this exercise, you will create a Dag that ingests new booking data, generates a daily report, and validates the output. The validated report is then published as an **asset**, making it available to downstream consumers.
+In this exercise, you will create a Dag that ingests new booking data, generates a daily report, and validates the output. Successful validation updates an Airflow **asset**, signaling to downstream Dags that fresh data is available.
 
 **What you will learn:**
 
@@ -107,7 +115,7 @@ In this exercise, you will create a Dag that ingests new booking data, generates
 
 ## Create the Dag file
 
-1. In the Astro IDE, create a new file `dags/daily_report.py`.
+1. In the Astro IDE, create a new file `dags/daily_report.py` (right-click on the `dags` folder and select _New file..._).
 2. Add the following imports and connection constant:
 
     ```python
@@ -138,6 +146,9 @@ In this exercise, you will create a Dag that ingests new booking data, generates
 
 > [!TIP]
 > Learn more about [Airflow decorators and the TaskFlow API](https://www.astronomer.io/docs/learn/airflow-decorators).
+
+> [!NOTE]
+> The `pass` statement is a placeholder. When you add your first task inside the function, remove the `pass` statement.
 
 ## Add the ingest task
 
@@ -182,7 +193,7 @@ The first task simulates ingesting new booking data by calling a SQL script that
 The second task aggregates booking data into a daily report per planet.
 
 1. Open `include/sql/report.sql` and review the query. Notice that it expects a `$reportDate` parameter and uses an upsert pattern (`ON CONFLICT ... DO UPDATE`) to handle re-runs gracefully.
-2. The query is missing the `total_paid_usd` column. Find the `-- TODO` comment in the SQL file and add the missing aggregation following the pattern of the other columns.
+2. The query is missing the `total_paid_usd` column. Find the **two** `-- TODO` comments in the SQL file and add the missing aggregations following the pattern of the other columns.
 
 > [!NOTE]
 > Open `include/sql/schema.sql` to see the available tables with their schemas.
@@ -249,6 +260,12 @@ Use `chain()` to define the execution order.
 3. Verify all tasks complete successfully.
 4. Check the _Assets_ view in Airflow (from the navigation on the left) and open the `daily_report` asset, to confirm the asset update shows under _Asset Events_.
 
+> [!TIP]
+> **Sync tips:**
+> - ⚡ Changes to Dag files sync faster. Changes to files in `include/` trigger an image rebuild, which takes longer.
+> - 🤖 While waiting for a sync, you can ask the Astro IDE AI questions about your Dag or about Airflow in general.
+> - 💾 You don't need to commit your changes. If you want to keep your code after the workshop, fork the repository first.
+
 ## See data validation in action
 
 To understand how data quality checks protect your pipeline, let's intentionally trigger a failure.
@@ -303,13 +320,13 @@ The workshop provides a custom `MissionControlOperator`, which generates an inte
 
 ---
 
-# Exercise 2: Asset-aware scheduling
+# Exercise 2: Asset-aware scheduling for data-driven Dag dependencies
 
 In this exercise, you will create a second Dag that is triggered automatically when the `daily_report` asset is updated. Since the `SQLColumnCheckOperator` updates the `daily_report` asset, it means every time data has been checked, the asset is updated and the second Dag will be triggered. This pattern decouples data producers from consumers.
 
 **What you will learn:**
 
-- Scheduling a Dag based on Asset updates.
+- Using assets for data-driven Dag dependencies.
 - Pulling data from upstream tasks via XCom.
 
 ## Create the Dag file
@@ -691,6 +708,9 @@ chain(
 
 1. Sync and trigger the `update_fare` Dag.
 2. The Dag pauses at `input_new_fare`. Click on the task and open the **Required Actions** tab.
+
+    ![Required Actions tab](doc/screenshot-hitl-required-actions.png)
+
 3. Enter a route ID (e.g., `1001`) and new fare, then click **Submit**.
 4. The Dag continues. Check the `print_updated_fares` task logs to see the updated fares.
 
