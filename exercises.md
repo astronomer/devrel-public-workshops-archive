@@ -45,6 +45,9 @@ While a deep understanding of the Astro platform is not required, here is a quic
 
 ![Astro IDE](doc/screenshot-astro-ide.png)
 
+> [!TIP]
+> The Astro IDE comes with an integrated AI, optimized for workflow orchestration with Apache Airflow. Feel free to interact with it during this workshops, to learn more about certain concepts.
+
 ## Set Up the Connection
 
 This workshop relies on a DuckDB database. To ensure your test environments can connect to it, the next step is to create a workspace-wide connection.
@@ -207,7 +210,7 @@ The second task aggregates booking data into a daily report per planet.
 > [!TIP]
 > You need to find the right Airflow template variable for the formatted logical date. See the [templates reference](https://airflow.apache.org/docs/apache-airflow/stable/templates-ref.html).
 
-4. Ensure to assign the the operator to a variable called `_generate_report`.
+4. Ensure you assign the operator to a variable called `_generate_report`.
 
 ## Add data validation
 
@@ -317,6 +320,49 @@ The workshop provides a custom `MissionControlOperator`, which generates an inte
 
 > [!IMPORTANT]
 > The first 3 that finish this challenge successfully receive a gift from Astronomer!
+
+
+## (Optional - feature highlight) Dag versioning
+
+One of the main features introduced with Airflow 3 is Dag Versioning. By adding the `MissionControlOperator`, we changed the structure of the Dag, and running the Dag with the new structure created a new Dag version. Let's see how it works:
+
+1. Open the Dags view from the main navigation.
+2. Open your `daily_report` Dag.
+3. Switch to the Dag graph view, by clicking the icon on the top left.
+4. Click on _Options_ and compare the graph of the different Dag versions.
+
+    ![Dag versioning in graph view](doc/screenshot-dag-versioning.png)
+
+If you open the _Code_ tab in the Dag view, you can compare different versions of your implementation.
+
+> [!NOTE]
+> 💡 Why do you have multiple versions? Each time you modified the Dag structure (adding the HITL operator), Airflow created a new version to track these changes. But only, if a Dag run is between the changes.
+
+> [!TIP]
+> Learn more about [Dag versioning and what Dag bundles are](https://www.astronomer.io/docs/learn/airflow-dag-versioning).
+
+## (Optional - feature highlight) backfill via Airflow UI
+
+Another new feature of the new Airflow 3 UI is the integrated backfill functionality. Let's reload some days of the daily report:
+
+1. Open the Dags view from the main navigation.
+2. Open your `daily_report` Dag.
+3. Click on _Trigger_ on the top right.
+4. Under _Date Range_ select a range that includes 2 Dag runs.
+5. Select _All Runs_ as _Reprocess Behavior_. This will reload the Dag runs no matter if they already ran successful, with an error, or not exist at all.
+6. Ensure to set _Max Active Runs_ to 1, so we load each day one by one.
+
+    ![Trigger a backfill](doc/screenshot-backfill-1.png)
+
+Click on _Run Backfill_ and watch the magic happen.
+
+> [!NOTE]
+> Take note of the backfill indicator on top of the page. It will automatically disappear once the reload is done.
+
+![Backfill indicator](doc/screenshot-backfill-2.png)
+
+> [!TIP]
+> Learn more about [rerunning Dags](https://www.astronomer.io/docs/learn/rerunning-dags).
 
 ---
 
