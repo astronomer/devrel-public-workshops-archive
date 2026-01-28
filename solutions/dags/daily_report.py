@@ -1,6 +1,6 @@
 from airflow.configuration import AIRFLOW_HOME
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator, SQLColumnCheckOperator
-from airflow.sdk import dag, task, chain, Asset
+from airflow.sdk import dag, chain, Asset
 from pendulum import datetime
 
 from include.mission_control import MissionControlOperator
