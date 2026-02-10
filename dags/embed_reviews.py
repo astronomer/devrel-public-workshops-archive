@@ -32,8 +32,7 @@ def embed_reviews():
         return [row[0] for row in query_result]
 
     @task.embed(
-        model_name="all-MiniLM-L12-v2",
-        encode_kwargs={"normalize_embeddings": True},
+        model="text-embedding-3-small",
         max_active_tis_per_dagrun=1,
     )
     def embed_review(review_text: str) -> str:

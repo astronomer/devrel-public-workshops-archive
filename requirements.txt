@@ -2,4 +2,3 @@
 apache-airflow-providers-common-sql==1.30.2
 airflow-provider-duckdb==0.2.0
 airflow-ai-sdk[openai]
-sentence-transformers

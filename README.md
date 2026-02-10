@@ -30,7 +30,7 @@ The underlying database used for AstroTrips is DuckDB, and it comes with a set o
 
 ## OpenAI API key
 
-This workshop uses OpenAI-compatible models for LLM tasks. You will need an API key from [OpenAI](https://platform.openai.com/api-keys) or any compatible provider. The key is configured as an environment variable (`OPENAI_API_KEY`) during the setup exercise. Embedding tasks (`@task.embed`) run locally and do not require an API key.
+This workshop uses OpenAI-compatible models for LLM and embedding tasks. You will need an API key from [OpenAI](https://platform.openai.com/api-keys) or any compatible provider. The key is configured as an environment variable (`OPENAI_API_KEY`) during the setup exercise.
 
 ## Using MotherDuck (optional)
 
