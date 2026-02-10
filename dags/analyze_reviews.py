@@ -24,6 +24,7 @@ class ReviewAnalysis(ai_sdk.BaseModel):
 @dag(
     tags=["astrotrips", "ai", "reviews"],
     template_searchpath=f"{AIRFLOW_HOME}/include/sql",
+    default_args={"retries": 3, "retry_delay": pendulum.duration(seconds=10)},
 )
 def analyze_reviews():
 

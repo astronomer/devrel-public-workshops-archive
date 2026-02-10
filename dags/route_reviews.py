@@ -12,6 +12,7 @@ _DUCKDB_CONN_ID = "duckdb_astrotrips"
     schedule=Asset("analyzed-reviews"),
     tags=["astrotrips", "ai", "reviews"],
     template_searchpath=f"{AIRFLOW_HOME}/include/sql",
+    default_args={"retries": 3, "retry_delay": pendulum.duration(seconds=10)},
 )
 def route_reviews():
 

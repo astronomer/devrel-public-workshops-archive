@@ -4,6 +4,7 @@ from airflow.providers.common.sql.operators.sql import (
     SQLInsertRowsOperator,
 )
 from airflow.sdk import Asset, chain, dag, task
+import pendulum
 
 _DUCKDB_CONN_ID = "duckdb_astrotrips"
 
@@ -12,6 +13,7 @@ _DUCKDB_CONN_ID = "duckdb_astrotrips"
     schedule=Asset("routed-reviews"),
     tags=["astrotrips", "ai", "reviews", "embeddings"],
     template_searchpath=f"{AIRFLOW_HOME}/include/sql",
+    default_args={"retries": 3, "retry_delay": pendulum.duration(seconds=10)},
 )
 def embed_reviews():
 

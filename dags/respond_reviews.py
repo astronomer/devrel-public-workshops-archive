@@ -2,6 +2,7 @@ from airflow.configuration import AIRFLOW_HOME
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from airflow.providers.standard.operators.hitl import HITLBranchOperator
 from airflow.sdk import Asset, chain, dag, task, task_group
+import pendulum
 from include.agent_tools import find_similar_reviews, lookup_booking
 from pydantic_ai import Agent
 
@@ -31,6 +32,7 @@ response_agent = Agent(
     schedule=(Asset("routed-reviews") & Asset("embedded-reviews")),
     tags=["astrotrips", "ai", "reviews", "hitl"],
     template_searchpath=f"{AIRFLOW_HOME}/include/sql",
+    default_args={"retries": 3, "retry_delay": pendulum.duration(seconds=10)},
 )
 def respond_reviews():
 
