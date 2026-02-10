@@ -31,7 +31,26 @@ def setup():
         sql="fixtures.sql"
     )
 
-    chain(_cleanup, _schema, _fixtures, MissionControlOperator(task_id="mission_control"))
+    _ai_schema = SQLExecuteQueryOperator(
+        task_id="ai_schema",
+        conn_id=_DUCKDB_CONN_ID,
+        sql="ai_schema.sql"
+    )
+
+    _ai_fixtures = SQLExecuteQueryOperator(
+        task_id="ai_fixtures",
+        conn_id=_DUCKDB_CONN_ID,
+        sql="ai_fixtures.sql"
+    )
+
+    chain(
+        _cleanup,
+        _schema,
+        _fixtures,
+        _ai_schema,
+        _ai_fixtures,
+        MissionControlOperator(task_id="mission_control"),
+    )
 
 
 setup_dag = setup()
