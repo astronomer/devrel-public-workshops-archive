@@ -1,7 +1,5 @@
-import os
-from typing import Literal
-
 import airflow_ai_sdk as ai_sdk
+import os
 import pendulum
 from airflow.configuration import AIRFLOW_HOME
 from airflow.providers.common.sql.operators.sql import (
@@ -10,6 +8,7 @@ from airflow.providers.common.sql.operators.sql import (
 )
 from airflow.sdk import Asset, chain, dag, task
 from pydantic_ai import BinaryContent
+from typing import Literal
 
 _DUCKDB_CONN_ID = "duckdb_astrotrips"
 

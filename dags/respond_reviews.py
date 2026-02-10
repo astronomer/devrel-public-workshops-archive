@@ -1,10 +1,11 @@
+import pendulum
 from airflow.configuration import AIRFLOW_HOME
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from airflow.providers.standard.operators.hitl import HITLBranchOperator
 from airflow.sdk import Asset, chain, dag, task, task_group
-import pendulum
-from include.agent_tools import find_similar_reviews, lookup_booking
 from pydantic_ai import Agent
+
+from include.agent_tools import find_similar_reviews, lookup_booking
 
 _DUCKDB_CONN_ID = "duckdb_astrotrips"
 

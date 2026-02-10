@@ -1,10 +1,10 @@
+import pendulum
 from airflow.configuration import AIRFLOW_HOME
 from airflow.providers.common.sql.operators.sql import (
     SQLExecuteQueryOperator,
     SQLInsertRowsOperator,
 )
 from airflow.sdk import Asset, chain, dag, task
-import pendulum
 
 _DUCKDB_CONN_ID = "duckdb_astrotrips"
 
