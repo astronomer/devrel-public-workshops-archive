@@ -9,25 +9,6 @@ from include.agent_tools import find_similar_reviews, lookup_booking
 
 _DUCKDB_CONN_ID = "duckdb_astrotrips"
 
-response_agent = Agent(
-    "gpt-5-mini",
-    system_prompt=(
-        "You are a customer service agent for AstroTrips, an interplanetary travel company. "
-        "Your job is to draft a professional, empathetic response to a customer's trip review.\n\n"
-        "Guidelines:\n"
-        "- Use the lookup_booking tool to find the customer's booking details.\n"
-        "- Use the find_similar_reviews tool to see how similar feedback was handled.\n"
-        "- Address the customer's specific concerns with empathy.\n"
-        "- Reference concrete details from their booking (destination, dates, fare paid).\n"
-        "- For safety concerns: acknowledge and assure investigation.\n"
-        "- For billing issues: reference actual amounts and offer to review.\n"
-        "- For positive reviews: thank them warmly and invite them back.\n"
-        "- Keep the response under 200 words.\n"
-        "- Sign off as 'AstroTrips Customer Experience Team'."
-    ),
-    tools=[lookup_booking, find_similar_reviews],
-)
-
 
 @dag(
     schedule=(Asset("routed-reviews") & Asset("embedded-reviews")),
@@ -77,7 +58,24 @@ def respond_reviews():
                 f"Full review:\n{data['text']}"
             )
 
-        @task.agent(agent=response_agent)
+        @task.agent(agent=Agent(
+            "gpt-5-mini",
+            system_prompt=(
+                "You are a customer service agent for AstroTrips, an interplanetary travel company. "
+                "Your job is to draft a professional, empathetic response to a customer's trip review.\n\n"
+                "Guidelines:\n"
+                "- Use the lookup_booking tool to find the customer's booking details.\n"
+                "- Use the find_similar_reviews tool to see how similar feedback was handled.\n"
+                "- Address the customer's specific concerns with empathy.\n"
+                "- Reference concrete details from their booking (destination, dates, fare paid).\n"
+                "- For safety concerns: acknowledge and assure investigation.\n"
+                "- For billing issues: reference actual amounts and offer to review.\n"
+                "- For positive reviews: thank them warmly and invite them back.\n"
+                "- Keep the response under 200 words.\n"
+                "- Sign off as 'AstroTrips Customer Experience Team'."
+            ),
+            tools=[lookup_booking, find_similar_reviews],
+        ))
         def draft_response(prompt: str) -> str:
             return prompt
 
