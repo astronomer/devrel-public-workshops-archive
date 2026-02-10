@@ -36,10 +36,10 @@ SENTIMENT_ICONS = {
     "neutral": ('<span class="sent" style="color:#E89428;" title="Neutral">&#9644;</span>'),
 }
 ROUTE_LABELS = {
-    "refund_team": "Refund Team",
-    "safety_team": "Safety Team",
+    "refund": "Refund Team",
+    "safety": "Safety Team",
     "marketing": "Marketing",
-    "general": "General",
+    "general": "General Support",
 }
 
 IMAGES_DIR = os.path.join(
@@ -238,7 +238,12 @@ def _build_cards(reviews, sim_map):
 
         routing = ""
         if routed_to:
-            routing = f'<div style="margin-top:8px;font-size:12px;color:#6b7280;">Assigned to: <strong>{ROUTE_LABELS.get(routed_to, routed_to)}</strong></div>'
+            label = ROUTE_LABELS.get(routed_to, routed_to)
+            routing = (
+                '<div class="sbox" style="border-left-color:#A067FB;background:#faf7fe;">'
+                f'<div class="slbl" style="color:#A067FB;">ROUTED TO</div>'
+                f'<div class="sbody">{label}</div></div>'
+            )
 
         status_box = ""
         if approved_at:
