@@ -1,117 +1,11 @@
-import os
-import time
-
-import duckdb
-import pendulum
 from airflow.configuration import AIRFLOW_HOME
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
-from duckdb_provider.hooks.duckdb_hook import DuckDBHook
 from airflow.providers.standard.operators.hitl import HITLBranchOperator
 from airflow.sdk import Asset, chain, dag, task, task_group
+from include.agent_tools import find_similar_reviews, lookup_booking
 from pydantic_ai import Agent
 
 _DUCKDB_CONN_ID = "duckdb_astrotrips"
-_DB_PATH = os.path.join(
-    os.environ.get("AIRFLOW_HOME", "/usr/local/airflow"),
-    "include",
-    "astrotrips.duckdb",
-)
-
-
-def _db_write(sql, params):
-    hook = DuckDBHook(duckdb_conn_id=_DUCKDB_CONN_ID)
-    for attempt in range(5):
-        try:
-            conn = hook.get_conn()
-            conn.execute(sql, params)
-            conn.close()
-            return
-        except duckdb.IOException:
-            if attempt < 4:
-                time.sleep(0.5 * (attempt + 1))
-            else:
-                raise
-
-
-def lookup_booking(booking_id: int) -> str:
-    """Look up booking details including customer, route, dates, and fare."""
-    conn = duckdb.connect(_DB_PATH, read_only=True)
-    rows = conn.execute(
-        "SELECT b.booking_id, c.full_name, p.planet_name, r.base_fare_usd, "
-        "b.departure_date, b.return_date, b.passengers, b.promo_code, "
-        "pay.amount_usd "
-        "FROM bookings b "
-        "JOIN customers c ON c.customer_id = b.customer_id "
-        "JOIN routes r ON r.route_id = b.route_id "
-        "JOIN planets p ON p.planet_id = r.destination_id "
-        "JOIN payments pay ON pay.booking_id = b.booking_id "
-        "WHERE b.booking_id = ?",
-        [booking_id],
-    ).fetchall()
-    conn.close()
-
-    if not rows:
-        return f"No booking found with ID {booking_id}"
-    row = rows[0]
-    return (
-        f"Booking #{row[0]}: Customer {row[1]}, traveling to {row[2]}. "
-        f"Base fare: ${row[3]:,}, paid: ${row[8]:,}. "
-        f"Departure: {row[4]}, return: {row[5]}. "
-        f"Passengers: {row[6]}, promo code: {row[7] or 'none'}."
-    )
-
-
-def find_similar_reviews(review_id: int) -> str:
-    """Find reviews that are most similar to the given review based on embeddings."""
-    conn = duckdb.connect(_DB_PATH, read_only=True)
-
-    target = conn.execute(
-        "SELECT embedding FROM review_embeddings WHERE review_id = ?",
-        [review_id],
-    ).fetchall()
-
-    if not target:
-        conn.close()
-        return f"No embedding found for review #{review_id}. Run the embed_reviews Dag first."
-
-    target_emb = target[0][0]
-
-    others = conn.execute(
-        "SELECT re.review_id, tr.review_text, tr.sentiment, tr.category, re.embedding "
-        "FROM review_embeddings re "
-        "JOIN trip_reviews tr ON tr.review_id = re.review_id "
-        "WHERE re.review_id != ?",
-        [review_id],
-    ).fetchall()
-    conn.close()
-
-    if not others:
-        return "No other embedded reviews found."
-
-    def cosine_sim(a, b):
-        dot = sum(x * y for x, y in zip(a, b))
-        norm_a = sum(x * x for x in a) ** 0.5
-        norm_b = sum(x * x for x in b) ** 0.5
-        if norm_a == 0 or norm_b == 0:
-            return 0.0
-        return dot / (norm_a * norm_b)
-
-    scored = []
-    for row in others:
-        sim = cosine_sim(target_emb, row[4])
-        scored.append((row[0], row[1], row[2], row[3], sim))
-
-    scored.sort(key=lambda x: x[4], reverse=True)
-    top_3 = scored[:3]
-
-    lines = [f"Top 3 similar reviews to review #{review_id}:"]
-    for rid, text, sentiment, category, sim in top_3:
-        lines.append(
-            f"  - Review #{rid} (similarity: {sim:.2f}, {sentiment}/{category}): "
-            f"{text[:120]}..."
-        )
-    return "\n".join(lines)
-
 
 response_agent = Agent(
     "gpt-5-mini",
@@ -133,18 +27,14 @@ response_agent = Agent(
 )
 
 
-@task.agent(agent=response_agent)
-def draft_response(prompt: str) -> str:
-    return prompt
-
-
 @dag(
     schedule=(Asset("routed-reviews") & Asset("embedded-reviews")),
     tags=["astrotrips", "ai", "reviews", "hitl"],
     template_searchpath=f"{AIRFLOW_HOME}/include/sql",
 )
 def respond_reviews():
-    get_reviews = SQLExecuteQueryOperator(
+
+    _reviews = SQLExecuteQueryOperator(
         task_id="get_reviews",
         conn_id=_DUCKDB_CONN_ID,
         sql=(
@@ -170,60 +60,51 @@ def respond_reviews():
             for row in query_result
         ]
 
-    reviews = prepare_review_list(get_reviews.output)
+    _review_list = prepare_review_list(_reviews.output)
 
     @task_group
     def respond_one_review(review_data):
+
         @task
-        def build_prompt(data):
+        def format_context(data):
             return (
-                f"Please draft a response to this customer review.\n\n"
                 f"Review #{data['review_id']} (booking #{data['booking_id']}):\n"
                 f"Category: {data['category']} | Sentiment: {data['sentiment']}\n"
                 f"Summary: {data['summary']}\n\n"
-                f"Full review:\n{data['text']}\n\n"
-                f"Use the lookup_booking tool with booking_id={data['booking_id']} "
-                f"to get booking details. "
-                f"Use the find_similar_reviews tool with review_id={data['review_id']} "
-                f"to find similar reviews."
+                f"Full review:\n{data['text']}"
             )
 
-        @task(max_active_tis_per_dagrun=1)
-        def save_draft(data, response_text):
-            _db_write(
+        @task.agent(agent=response_agent)
+        def draft_response(prompt: str) -> str:
+            return prompt
+
+        @task
+        def extract_id(data):
+            return data["review_id"]
+
+        _context = format_context(review_data)
+        _response = draft_response(_context)
+        _id = extract_id(review_data)
+
+        _save_draft = SQLExecuteQueryOperator(
+            task_id="save_draft",
+            conn_id=_DUCKDB_CONN_ID,
+            sql=(
                 "UPDATE trip_reviews SET status = 'response_drafted', "
-                "ai_response = ? WHERE review_id = ?",
-                [response_text, data["review_id"]],
-            )
-            return {"review_id": data["review_id"], "response": response_text}
+                "ai_response = $response WHERE review_id = $id::INT"
+            ),
+            parameters={"id": _id, "response": _response},
+            max_active_tis_per_dagrun=1,
+        )
 
-        @task(max_active_tis_per_dagrun=1)
-        def finalize(data):
-            _db_write(
-                "UPDATE trip_reviews SET status = 'approved', "
-                "approved_at = CURRENT_TIMESTAMP WHERE review_id = ?",
-                [data["review_id"]],
-            )
-
-        @task(max_active_tis_per_dagrun=1)
-        def mark_rejected(data):
-            _db_write(
-                "UPDATE trip_reviews SET status = 'rejected' WHERE review_id = ?",
-                [data["review_id"]],
-            )
-
-        prompt = build_prompt(review_data)
-        response = draft_response(prompt)
-        saved = save_draft(review_data, response)
-
-        review_branch = HITLBranchOperator(
+        _review_branch = HITLBranchOperator(
             task_id="review_response",
             subject="Review response approval",
             body=(
                 "Please review the AI-drafted response and approve or reject it.\n\n"
-                "**Review ID:** {{ ti.xcom_pull(task_ids='respond_one_review.save_draft', map_indexes=ti.map_index)['review_id'] }}\n\n"
+                "**Review ID:** {{ ti.xcom_pull(task_ids='respond_one_review.extract_id', map_indexes=ti.map_index) }}\n\n"
                 "**Drafted response:**\n\n"
-                "{{ ti.xcom_pull(task_ids='respond_one_review.save_draft', map_indexes=ti.map_index)['response'] }}"
+                "{{ ti.xcom_pull(task_ids='respond_one_review.draft_response', map_indexes=ti.map_index) }}"
             ),
             options=["Approve", "Reject"],
             options_mapping={
@@ -232,9 +113,28 @@ def respond_reviews():
             },
         )
 
-        chain(saved, review_branch, [finalize(review_data), mark_rejected(review_data)])
+        _finalize = SQLExecuteQueryOperator(
+            task_id="finalize",
+            conn_id=_DUCKDB_CONN_ID,
+            sql=(
+                "UPDATE trip_reviews SET status = 'approved', "
+                "approved_at = CURRENT_TIMESTAMP WHERE review_id = $id::INT"
+            ),
+            parameters={"id": _id},
+            max_active_tis_per_dagrun=1,
+        )
 
-    respond_one_review.expand(review_data=reviews)
+        _mark_rejected = SQLExecuteQueryOperator(
+            task_id="mark_rejected",
+            conn_id=_DUCKDB_CONN_ID,
+            sql="UPDATE trip_reviews SET status = 'rejected' WHERE review_id = $id::INT",
+            parameters={"id": _id},
+            max_active_tis_per_dagrun=1,
+        )
+
+        chain(_save_draft, _review_branch, [_finalize, _mark_rejected])
+
+    respond_one_review.expand(review_data=_review_list)
 
 
 respond_reviews()

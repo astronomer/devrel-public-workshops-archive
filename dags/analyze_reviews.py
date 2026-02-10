@@ -70,7 +70,7 @@ def analyze_reviews():
             return [review_text, BinaryContent(data=image_data, media_type="image/jpeg")]
         return review_text
 
-    _formatted_context = format_context(_reviews)
+    _formatted_context = format_context(_reviews.output)
     _analyses = analyze_review.expand_kwargs(_formatted_context)
 
     @task
@@ -92,7 +92,7 @@ def analyze_reviews():
             ))
         return rows
 
-    _prepared_rows = prepare_rows(_reviews, _analyses)
+    _prepared_rows = prepare_rows(_reviews.output, _analyses)
 
     # NOTE: This could also be done with an UPDATE statement in the database instead of deleting and reinserting,
     # but to show different patterns, we'll do it this way for the workshop.

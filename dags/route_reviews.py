@@ -40,7 +40,7 @@ def route_reviews():
             for row in query_result
         ]
 
-    _review_list = prepare_review_list(_reviews)
+    _review_list = prepare_review_list(_reviews.output)
 
     @task_group(default_args={"max_active_tis_per_dagrun": 1})
     def handle_review(review_data):

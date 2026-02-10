@@ -32,12 +32,13 @@ def embed_reviews():
     @task.embed(
         model_name="all-MiniLM-L12-v2",
         encode_kwargs={"normalize_embeddings": True},
+        max_active_tis_per_dagrun=1,
     )
     def embed_review(review_text: str) -> str:
         return review_text
 
-    _texts = extract_texts(_reviews)
-    _ids = extract_ids(_reviews)
+    _texts = extract_texts(_reviews.output)
+    _ids = extract_ids(_reviews.output)
 
     _embeddings = embed_review.expand(review_text=_texts)
 
@@ -101,7 +102,7 @@ def embed_reviews():
         print("::endgroup::")
 
     chain(_prepared_rows, _save_embeddings, _get_embedded_reviews)
-    compute_similarity(_get_embedded_reviews)
+    compute_similarity(_get_embedded_reviews.output)
 
 
 embed_reviews()
