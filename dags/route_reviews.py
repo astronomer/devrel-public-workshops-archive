@@ -2,7 +2,6 @@ import pendulum
 from airflow.configuration import AIRFLOW_HOME
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from airflow.sdk import Asset, dag, task, task_group, chain
-from duckdb_provider.hooks.duckdb_hook import DuckDBHook
 
 from include.mission_control import MissionControlOperator
 
