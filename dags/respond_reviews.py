@@ -65,7 +65,7 @@ def respond_reviews():
 
     _review_list = prepare_review_list(_reviews.output)
 
-    @task_group
+    @task_group(default_args={"max_active_tis_per_dagrun": 1})
     def respond_one_review(review_data):
 
         @task
