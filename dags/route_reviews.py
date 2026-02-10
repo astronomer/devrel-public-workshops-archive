@@ -10,14 +10,12 @@ _DUCKDB_CONN_ID = "duckdb_astrotrips"
 
 @dag(
     schedule=Asset("analyzed-reviews"),
-    start_date=pendulum.datetime(2025, 1, 1),
-    catchup=False,
     tags=["astrotrips", "ai", "reviews"],
     template_searchpath=f"{AIRFLOW_HOME}/include/sql",
 )
 def route_reviews():
 
-    _get_reviews = SQLExecuteQueryOperator(
+    _reviews = SQLExecuteQueryOperator(
         task_id="get_reviews",
         conn_id=_DUCKDB_CONN_ID,
         sql=(
@@ -42,7 +40,7 @@ def route_reviews():
             for row in query_result
         ]
 
-    _prepare_review_list = prepare_review_list(_get_reviews.output)
+    _review_list = prepare_review_list(_reviews)
 
     @task_group(default_args={"max_active_tis_per_dagrun": 1})
     def handle_review(review_data):
@@ -77,8 +75,8 @@ def route_reviews():
         def route_review(review_text: str) -> str:
             return review_text
 
-        _format_context = format_context(review_data)
-        _route_review = route_review(_format_context)
+        _formatted_context = format_context(review_data)
+        _route_review = route_review(_formatted_context)
 
         # handle routing in the database by updating the review status and assigned team
 
@@ -86,34 +84,34 @@ def route_reviews():
         def extract_id(review_data):
             return review_data["review_id"]
 
-        _extract_id = extract_id(review_data)
+        _id = extract_id(review_data)
 
         _route_refund = SQLExecuteQueryOperator(
             task_id="route_refund",
             conn_id=_DUCKDB_CONN_ID,
             sql="UPDATE trip_reviews SET status = 'routed', routed_to = 'refund' WHERE review_id = $id::INT",
-            parameters={"id": _extract_id}
+            parameters={"id": _id}
         )
 
         _route_safety = SQLExecuteQueryOperator(
             task_id="route_safety",
             conn_id=_DUCKDB_CONN_ID,
             sql="UPDATE trip_reviews SET status = 'routed', routed_to = 'safety' WHERE review_id = $id::INT",
-            parameters={"id": _extract_id}
+            parameters={"id": _id}
         )
 
         _route_marketing = SQLExecuteQueryOperator(
             task_id="route_marketing",
             conn_id=_DUCKDB_CONN_ID,
             sql="UPDATE trip_reviews SET status = 'routed', routed_to = 'marketing' WHERE review_id = $id::INT",
-            parameters={"id": _extract_id}
+            parameters={"id": _id}
         )
 
         _route_general = SQLExecuteQueryOperator(
             task_id="route_general",
             conn_id=_DUCKDB_CONN_ID,
             sql="UPDATE trip_reviews SET status = 'routed', routed_to = 'general' WHERE review_id = $id::INT",
-            parameters={"id": _extract_id}
+            parameters={"id": _id}
         )
 
         chain(
@@ -132,7 +130,7 @@ def route_reviews():
     _mission_control = MissionControlOperator(task_id="mission_control")
 
     chain(
-        handle_review.expand(review_data=_prepare_review_list),
+        handle_review.expand(review_data=_review_list),
         routing_complete(),
         _mission_control
     )

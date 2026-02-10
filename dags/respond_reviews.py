@@ -140,8 +140,6 @@ def draft_response(prompt: str) -> str:
 
 @dag(
     schedule=(Asset("routed-reviews") & Asset("embedded-reviews")),
-    start_date=pendulum.datetime(2025, 1, 1),
-    catchup=False,
     tags=["astrotrips", "ai", "reviews", "hitl"],
     template_searchpath=f"{AIRFLOW_HOME}/include/sql",
 )

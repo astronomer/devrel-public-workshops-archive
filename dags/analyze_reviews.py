@@ -22,14 +22,12 @@ class ReviewAnalysis(ai_sdk.BaseModel):
 
 
 @dag(
-    schedule=None,
-    start_date=pendulum.datetime(2025, 1, 1),
-    catchup=False,
     tags=["astrotrips", "ai", "reviews"],
     template_searchpath=f"{AIRFLOW_HOME}/include/sql",
 )
 def analyze_reviews():
-    get_reviews = SQLExecuteQueryOperator(
+
+    _reviews = SQLExecuteQueryOperator(
         task_id="get_reviews",
         conn_id=_DUCKDB_CONN_ID,
         sql=(
@@ -40,7 +38,7 @@ def analyze_reviews():
     )
 
     @task
-    def prepare_analysis_inputs(query_result):
+    def format_context(query_result):
         return [
             {"review_text": row[2], "image_path": row[3]}
             for row in query_result
@@ -64,7 +62,7 @@ def analyze_reviews():
         output_type=ReviewAnalysis,
     )
     def analyze_review(review_text: str, image_path: str | None = None) -> str | list:
-        # note: in a production setup, images should be stored in a dedicated object storage service instead of local filesystem
+        # NOTE: In a production setup, images should be stored in a dedicated object storage service instead of local filesystem.
         if image_path:
             full_path = os.path.join(AIRFLOW_HOME, "include", image_path)
             with open(full_path, "rb") as f:
@@ -72,8 +70,8 @@ def analyze_reviews():
             return [review_text, BinaryContent(data=image_data, media_type="image/jpeg")]
         return review_text
 
-    inputs = prepare_analysis_inputs(get_reviews.output)
-    analyses = analyze_review.expand_kwargs(inputs)
+    _formatted_context = format_context(_reviews)
+    _analyses = analyze_review.expand_kwargs(_formatted_context)
 
     @task
     def prepare_rows(query_result, analyses):
@@ -94,13 +92,15 @@ def analyze_reviews():
             ))
         return rows
 
-    prepared = prepare_rows(get_reviews.output, analyses)
+    _prepared_rows = prepare_rows(_reviews, _analyses)
 
-    save = SQLInsertRowsOperator(
+    # NOTE: This could also be done with an UPDATE statement in the database instead of deleting and reinserting,
+    # but to show different patterns, we'll do it this way for the workshop.
+    _save_analysis = SQLInsertRowsOperator(
         task_id="save_analyses",
         conn_id=_DUCKDB_CONN_ID,
         table_name="trip_reviews",
-        rows=prepared,
+        rows=_prepared_rows,
         columns=[
             "review_id", "booking_id", "review_text", "image_path", "submitted_at",
             "status", "sentiment", "category", "summary", "image_analysis",
@@ -109,7 +109,7 @@ def analyze_reviews():
         outlets=[Asset("analyzed-reviews")],
     )
 
-    chain(prepared, save)
+    chain(_prepared_rows, _save_analysis)
 
 
 analyze_reviews()

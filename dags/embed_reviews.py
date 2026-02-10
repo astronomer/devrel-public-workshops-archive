@@ -1,4 +1,3 @@
-import pendulum
 from airflow.configuration import AIRFLOW_HOME
 from airflow.providers.common.sql.operators.sql import (
     SQLExecuteQueryOperator,
@@ -11,24 +10,23 @@ _DUCKDB_CONN_ID = "duckdb_astrotrips"
 
 @dag(
     schedule=Asset("routed-reviews"),
-    start_date=pendulum.datetime(2025, 1, 1),
-    catchup=False,
     tags=["astrotrips", "ai", "reviews", "embeddings"],
     template_searchpath=f"{AIRFLOW_HOME}/include/sql",
 )
 def embed_reviews():
-    get_reviews = SQLExecuteQueryOperator(
+
+    _reviews = SQLExecuteQueryOperator(
         task_id="get_reviews",
         conn_id=_DUCKDB_CONN_ID,
         sql="SELECT review_id, review_text FROM trip_reviews WHERE status != 'pending'",
     )
 
     @task
-    def extract_review_texts(query_result):
+    def extract_texts(query_result):
         return [row[1] for row in query_result]
 
     @task
-    def extract_review_ids(query_result):
+    def extract_ids(query_result):
         return [row[0] for row in query_result]
 
     @task.embed(
@@ -38,30 +36,31 @@ def embed_reviews():
     def embed_review(review_text: str) -> str:
         return review_text
 
-    review_texts = extract_review_texts(get_reviews.output)
-    review_ids = extract_review_ids(get_reviews.output)
-    embeddings = embed_review.expand(review_text=review_texts)
+    _texts = extract_texts(_reviews)
+    _ids = extract_ids(_reviews)
+
+    _embeddings = embed_review.expand(review_text=_texts)
 
     @task
-    def prepare_embedding_rows(review_ids, embeddings):
+    def prepare_rows(review_ids, embeddings):
         """Combine review IDs with their embedding vectors into insertable rows."""
         rows = []
         for review_id, embedding in zip(review_ids, embeddings):
             rows.append((review_id, embedding))
         return rows
 
-    prepared = prepare_embedding_rows(review_ids, embeddings)
+    _prepared_rows = prepare_rows(_ids, _embeddings)
 
-    save = SQLInsertRowsOperator(
+    _save_embeddings = SQLInsertRowsOperator(
         task_id="save_embeddings",
         conn_id=_DUCKDB_CONN_ID,
         table_name="review_embeddings",
-        rows=prepared,
+        rows=_prepared_rows,
         columns=["review_id", "embedding"],
         preoperator="DELETE FROM review_embeddings",
     )
 
-    get_embedded = SQLExecuteQueryOperator(
+    _get_embedded_reviews = SQLExecuteQueryOperator(
         task_id="get_embedded_reviews",
         conn_id=_DUCKDB_CONN_ID,
         sql=(
@@ -101,8 +100,8 @@ def embed_reviews():
             print(f"  Review #{r1_id} ({cat1}) <-> Review #{r2_id} ({cat2}): {sim:.3f}{marker}")
         print("::endgroup::")
 
-    chain(prepared, save, get_embedded)
-    compute_similarity(get_embedded.output)
+    chain(_prepared_rows, _save_embeddings, _get_embedded_reviews)
+    compute_similarity(_get_embedded_reviews)
 
 
 embed_reviews()
