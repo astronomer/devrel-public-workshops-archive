@@ -191,7 +191,7 @@ def _build_cards(reviews, sim_map):
             img_file = image_path.split("/")[-1]
             image_html = (
                 f'<div class="img-attach" style="margin-top:12px;">'
-                f'<img src="/support-portal/images/{img_file}" alt="Review attachment" '
+                f'<img src="images/{img_file}" alt="Review attachment" '
                 f'style="max-width:100%;max-height:300px;border-radius:6px;border:1px solid #eee;"></div>'
             )
             if image_analysis_text:
