@@ -60,6 +60,7 @@ def analyze_reviews():
             "If no image is attached, set this to null."
         ),
         output_type=ReviewAnalysis,
+        max_active_tis_per_dagrun=1
     )
     def analyze_review(review_text: str, image_path: str | None = None) -> str | list:
         # NOTE: In a production setup, images should be stored in a dedicated object storage service instead of local filesystem.

@@ -1,4 +1,4 @@
-import pendulum
+from pendulum import duration
 from airflow.configuration import AIRFLOW_HOME
 from airflow.providers.common.sql.operators.sql import (
     SQLExecuteQueryOperator,
@@ -13,7 +13,7 @@ _DUCKDB_CONN_ID = "duckdb_astrotrips"
     schedule=Asset("routed-reviews"),
     tags=["astrotrips", "ai", "reviews", "embeddings"],
     template_searchpath=f"{AIRFLOW_HOME}/include/sql",
-    default_args={"retries": 3, "retry_delay": pendulum.duration(seconds=10)},
+    default_args={"retries": 3, "retry_delay": duration(seconds=10)},
 )
 def embed_reviews():
 
@@ -32,7 +32,7 @@ def embed_reviews():
         return [row[0] for row in query_result]
 
     @task.embed(
-        model="text-embedding-3-small",
+        model_name="all-MiniLM-L6-v2",
         max_active_tis_per_dagrun=1,
     )
     def embed_review(review_text: str) -> str:
