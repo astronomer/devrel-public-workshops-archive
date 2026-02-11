@@ -1,6 +1,6 @@
 import airflow_ai_sdk as ai_sdk
 import os
-import pendulum
+from pendulum import duration
 from airflow.configuration import AIRFLOW_HOME
 from airflow.providers.common.sql.operators.sql import (
     SQLExecuteQueryOperator,
@@ -23,7 +23,7 @@ class ReviewAnalysis(ai_sdk.BaseModel):
 @dag(
     tags=["astrotrips", "ai", "reviews"],
     template_searchpath=f"{AIRFLOW_HOME}/include/sql",
-    default_args={"retries": 3, "retry_delay": pendulum.duration(seconds=10)},
+    default_args={"retries": 3, "retry_delay": duration(seconds=10)},
 )
 def analyze_reviews():
 
