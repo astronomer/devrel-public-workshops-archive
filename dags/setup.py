@@ -5,6 +5,7 @@ schema and fixtures for the workshop.
 Please do not change this code during the workshop!
 """
 
+from pendulum import duration
 from airflow.configuration import AIRFLOW_HOME
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from airflow.sdk import dag, chain, Asset
@@ -19,7 +20,7 @@ _DUCKDB_CONN_ID = "duckdb_astrotrips"
     template_searchpath=f"{AIRFLOW_HOME}/include/sql",
     default_args={
         "retries": 3,
-        "retry_delay": pendulum.duration(seconds=10),
+        "retry_delay": duration(seconds=10),
     },
     doc_md=__doc__
 )

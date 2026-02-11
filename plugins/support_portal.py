@@ -306,12 +306,6 @@ async def dashboard():
 class SupportPortalPlugin(AirflowPlugin):
     name = "support_portal"
 
-    base_url = ""
-    api_base_url = conf.get("api", "base_url")
-
-    if "astronomer" in api_base_url.lower():  # running on Astro
-        base_url = api_base_url
-
     fastapi_apps = [{
         "app": app,
         "url_prefix": "/support-portal",
@@ -319,7 +313,7 @@ class SupportPortalPlugin(AirflowPlugin):
     }]
     external_views = [{
         "name": "AstroTrips",
-        "href": f"{base_url}/support-portal/dashboard",
+        "href": "support-portal/dashboard",
         "destination": "nav",
         "url_route": "support-portal",
     }]

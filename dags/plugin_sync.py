@@ -21,7 +21,7 @@ Please do not change this code during the workshop!
 import json
 from datetime import datetime
 
-import pendulum
+from pendulum import duration
 from airflow.models import Variable
 from airflow.sdk import Asset, dag, task
 from duckdb_provider.hooks.duckdb_hook import DuckDBHook
@@ -65,7 +65,7 @@ def _serialize(obj):
     tags=["astrotrips", "plugin"],
     default_args={
         "retries": 3,
-        "retry_delay": pendulum.duration(seconds=10),
+        "retry_delay": duration(seconds=10),
     },
     doc_md=__doc__,
 )
