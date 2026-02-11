@@ -1,6 +1,13 @@
+"""
+This Dag is responsible for setting up the DuckDB database with the necessary
+schema and fixtures for the workshop.
+
+Please do not change this code during the workshop!
+"""
+
 from airflow.configuration import AIRFLOW_HOME
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
-from airflow.sdk import dag, chain
+from airflow.sdk import dag, chain, Asset
 
 from include.mission_control import MissionControlOperator
 
@@ -9,7 +16,12 @@ _DUCKDB_CONN_ID = "duckdb_astrotrips"
 
 @dag(
     tags=["astrotrips", "setup"],
-    template_searchpath=f"{AIRFLOW_HOME}/include/sql"
+    template_searchpath=f"{AIRFLOW_HOME}/include/sql",
+    default_args={
+        "retries": 3,
+        "retry_delay": pendulum.duration(seconds=10),
+    },
+    doc_md=__doc__
 )
 def setup():
 
@@ -49,7 +61,7 @@ def setup():
         _fixtures,
         _ai_schema,
         _ai_fixtures,
-        MissionControlOperator(task_id="mission_control"),
+        MissionControlOperator(task_id="mission_control", outlets=[Asset("astrotrips-setup")]),
     )
 
 

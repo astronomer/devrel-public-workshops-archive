@@ -1,9 +1,11 @@
+import json
 import os
 from datetime import datetime
 from pathlib import Path
 
 import duckdb
 from airflow.configuration import conf
+from airflow.models import Variable
 from airflow.plugins_manager import AirflowPlugin
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
@@ -55,6 +57,15 @@ if os.path.isdir(IMAGES_DIR):
     app.mount("/images", StaticFiles(directory=IMAGES_DIR), name="images")
 
 
+def _load_from_variable():
+    """Load portal data from Airflow Variable (set by plugin_sync Dag).
+    Returns dict with 'reviews' and 'embeddings' keys, or None on failure."""
+    try:
+        return json.loads(Variable.get("support_portal_data"))
+    except Exception:
+        return None
+
+
 def _query(sql):
     try:
         conn = duckdb.connect(DB_PATH, read_only=True)
@@ -65,7 +76,9 @@ def _query(sql):
         return []
 
 
-def _get_reviews():
+def _get_reviews(portal_data):
+    if portal_data and "reviews" in portal_data:
+        return [tuple(r) for r in portal_data["reviews"]]
     return _query(
         "SELECT r.review_id, r.review_text, r.status, r.sentiment, r.category, "
         "r.summary, r.routed_to, r.ai_response, r.submitted_at, r.approved_at, "
@@ -81,12 +94,15 @@ def _get_reviews():
     )
 
 
-def _get_similar_map():
-    rows = _query(
-        "SELECT re.review_id, tr.category, tr.sentiment, re.embedding, tr.review_text "
-        "FROM review_embeddings re "
-        "JOIN trip_reviews tr ON tr.review_id = re.review_id"
-    )
+def _get_similar_map(portal_data):
+    if portal_data and "embeddings" in portal_data:
+        rows = [tuple(r) for r in portal_data["embeddings"]]
+    else:
+        rows = _query(
+            "SELECT re.review_id, tr.category, tr.sentiment, re.embedding, tr.review_text "
+            "FROM review_embeddings re "
+            "JOIN trip_reviews tr ON tr.review_id = re.review_id"
+        )
     if len(rows) < 2:
         return {}
 
@@ -275,8 +291,9 @@ def _build_cards(reviews, sim_map):
 
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard():
-    reviews = _get_reviews()
-    sim_map = _get_similar_map()
+    portal_data = _load_from_variable()
+    reviews = _get_reviews(portal_data)
+    sim_map = _get_similar_map(portal_data)
     return HTMLResponse(
         content=TEMPLATE.format(
             stats_html=_build_stats(reviews),
