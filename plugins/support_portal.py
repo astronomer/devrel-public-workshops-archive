@@ -3,6 +3,7 @@ from datetime import datetime
 from pathlib import Path
 
 import duckdb
+from airflow.configuration import conf
 from airflow.plugins_manager import AirflowPlugin
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
@@ -287,6 +288,13 @@ async def dashboard():
 
 class SupportPortalPlugin(AirflowPlugin):
     name = "support_portal"
+
+    base_url = ""
+    api_base_url = conf.get("api", "base_url")
+
+    if "astronomer" in api_base_url.lower():  # running on Astro
+        base_url = api_base_url
+
     fastapi_apps = [{
         "app": app,
         "url_prefix": "/support-portal",
@@ -294,7 +302,7 @@ class SupportPortalPlugin(AirflowPlugin):
     }]
     external_views = [{
         "name": "AstroTrips",
-        "href": "/support-portal/dashboard",
+        "href": f"{base_url}/support-portal/dashboard",
         "destination": "nav",
         "url_route": "support-portal",
     }]
