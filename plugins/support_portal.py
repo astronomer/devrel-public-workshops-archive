@@ -291,7 +291,6 @@ class SupportPortalPlugin(AirflowPlugin):
         "app": app,
         "url_prefix": "/support-portal",
         "name": "AstroTrips Support Portal",
-        "auth": False,
     }]
     external_views = [{
         "name": "AstroTrips",
