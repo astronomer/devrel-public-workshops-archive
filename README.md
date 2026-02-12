@@ -1,3 +1,5 @@
+![Workshop Airflow version](https://img.shields.io/badge/Airflow_version-3.1-blue?style=for-the-badge)
+
 # Apache Airflow - ELT/ETL Workshop
 
 Welcome to the Apache Airflow ELT/ETL workshop! You will build and orchestrate data pipelines in a real Airflow environment using a practical scenario.
@@ -17,15 +19,17 @@ Welcome to the Apache Airflow ELT/ETL workshop! You will build and orchestrate d
 
 ## Scenario: AstroTrips
 
-AstroTrips is a fictional travel company specializing in interplanetary trips. Customers can book journeys to destinations like Mars, Venus, or Saturn, complete with launch windows, spacecraft assignments, and premium add-ons.
+AstroTrips is a fictional travel company specializing in interplanetary trips. Customers can book journeys to destinations like the Moon, Mars, or Europa, complete with launch windows and passenger manifests.
 
 As AstroTrips grows, so does the amount of data it generates: bookings, customers, destinations, prices, and operational metrics. To support analytics and reporting, the company relies on Apache Airflow to orchestrate data pipelines that ingest, transform, and validate this data.
 
 Throughout this workshop, you will work as a data engineer at AstroTrips. Your task is to build and extend Airflow Dags that process AstroTrips data, using realistic datasets and workflows while focusing on best practices rather than domain complexity.
 
-![AstroTrips](doc/astrotrips.png)
+![AstroTrips](doc/astrotrips-banner.png)
 
-The underlying database used for AstroTips is DuckDB and it comes with a set of base tables and might be extended with additional tables depending on the workshop.
+The underlying database used for AstroTrips is DuckDB, and it comes with a set of base tables and might be extended with additional tables depending on the workshop.
+
+![AstroTrips](doc/astrotrips-base-tables.png)
 
 ## Using MotherDuck (optional)
 
