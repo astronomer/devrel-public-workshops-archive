@@ -25,7 +25,7 @@ While a deep understanding of the Astro platform is not required, here is a quic
     - Next, choose an _Organization_ and _Workspace_ name. These can be fictional names and you can change them later.
     - In the third step, click the small link at the bottom under the two boxes: _Or skip this and go to your workspace_.
 
-    <img src="doc/screenshot-trial-setup.png" width="80%">
+    ![Create an empty environment](doc/screenshot-trial-setup.png)
 
     - You should now see the Astro platform UI.
 
@@ -39,11 +39,11 @@ While a deep understanding of the Astro platform is not required, here is a quic
     - **AUTHENTICATION TYPE**: `None (public repository)`
     - Click _Connect_. The IDE will import and open the project for you.
 
-    <img src="doc/screenshot-select-git-repo.png" width="80%">
+    ![Connect Git project in Astro IDE](doc/screenshot-select-git-repo.png)
 
 **You now have the Astro IDE with the project ready to go.**
 
-<img src="doc/screenshot-astro-ide.png" width="80%">
+![Astro IDE](doc/screenshot-astro-ide.png)
 
 > [!TIP]
 > The Astro IDE comes with an integrated AI assistant, optimized for workflow orchestration with Apache Airflow. Feel free to interact with it during this workshop to learn more about certain concepts.
@@ -58,14 +58,14 @@ This workshop relies on a DuckDB database. To ensure your test environments can 
 1. In Astro, navigate to _Environment_ → _Connections_ and click the _+ Connection_ button.
 2. In the dialog, search for and select _Generic_, then enter the following details:
 
-    <img src="doc/screenshot-add-connection-generic.png" width="80%">
+    ![Select generic type](doc/screenshot-add-connection-generic.png)
 
     - **CONNECTION ID**: `duckdb_astrotrips`
     - **TYPE**: `duckdb`
     - **HOST**: `include/astrotrips.duckdb`
     - Set **AUTOMATICALLY LINK TO ALL DEPLOYMENTS** to _On_
 
-    <img src="doc/screenshot-add-connection.png" width="80%">
+    ![Add connection](doc/screenshot-add-connection.png)
 
 3. Click _Create Connection_.
 
@@ -83,7 +83,7 @@ The AI exercises require an OpenAI API key (or any compatible provider). We will
     - Mark it as **Secret**
     - Set **AUTOMATICALLY LINK TO ALL DEPLOYMENTS** to _On_
 
-    <img src="doc/screenshot-add-env-var.png" width="60%">
+    ![Add environment variable](doc/screenshot-add-env-var.png)
 
 3. Click _Create Environment Variable_.
 
@@ -97,24 +97,24 @@ The final setup step is to start a test deployment (a fully functional Airflow e
 1. Navigate to the _Astro IDE_ and click _Start Test Deployment_ in the top right corner. The deployment takes 3-5 minutes to spin up.
 2. While the deployment is starting, click the dropdown next to _Sync to Test_ and select _Test Deployment Details_.
 
-    <img src="doc/screenshot-open-deployment-details.png" width="80%">
+    ![Open test deployment details](doc/screenshot-open-deployment-details.png)
 
 3. Navigate to the _Environment_ tab and click _Edit Deployment Variables_.
 4. In the popup, remove the `AIRFLOW__SCHEDULER__USE_JOB_SCHEDULE` variable to enable scheduling for the test deployment.
 5. Click _Update Environment Variables_.
 
-    <img src="doc/screenshot-env-vars.png" width="80%">
+    ![Change environment variables](doc/screenshot-env-vars.png)
 
 > [!NOTE]
 > Scheduling is disabled by default for test deployments to prevent Dags from running automatically. This gives you maximum control during development and helps avoid unwanted side effects. However, for this workshop, we want Dags to be scheduled based on asset updates, so we enable scheduling accordingly.
 
 6. Back in the Astro IDE, once the test deployment is ready, select _Open Airflow_, from the same dropdown menu.
 
-    <img src="doc/screenshot-open-airflow.png" width="80%">
+    ![Open Airflow](doc/screenshot-open-airflow.png)
 
 7. In the Airflow UI, open the Dags view from the left menu and trigger the `setup` Dag using the play button.
 
-    <img src="doc/screenshot-trigger-setup-dag.png" width="80%">
+    ![Trigger setup Dag](doc/screenshot-trigger-setup-dag.png)
 
 **Once the Dag run completes successfully, your database is ready.**
 
@@ -125,7 +125,7 @@ The final setup step is to start a test deployment (a fully functional Airflow e
 
 Before we start coding, take a look at the **AstroTrips Support Portal**. In the Airflow sidebar, click the _AstroTrips_ link to open it.
 
-<img src="doc/screenshot-support-portal-base.png" width="80%">
+![AstroTrips support portal](doc/screenshot-support-portal-base.png)
 
 This is a custom **Airflow plugin** built with FastAPI, one of the new extension points in Airflow 3. It provides a dashboard that visualizes the state of all customer reviews as they move through the pipeline.
 
@@ -360,7 +360,7 @@ The LLM results need to be written back to the database. We'll collect all analy
 2. Trigger the `analyze_reviews` Dag.
 3. Once complete, open the **AstroTrips Support Portal**. You should see all 8 reviews with AI analysis results (sentiment, category, summary) and image descriptions for the 3 reviews that have photos.
 
-<img src="doc/screenshot-analyzed-review.png" width="80%">
+![AstroTrips analyzed review](doc/screenshot-analyzed-review.png)
 
 ---
 
@@ -556,7 +556,7 @@ Each branch runs a `SQLExecuteQueryOperator` that updates the review's status an
 2. While it is running, check the graph view of `route_reviews`. You should see the task group expanded with branching per review. Make yourself familiar with the different views Airflow offers, can you find the log output of individual task instances?
 3. Open the **AstroTrips Support Portal**! Reviews should now show a purple **ROUTED TO** box indicating the assigned team.
 
-<img src="doc/screenshot-routed-review.png" width="80%">
+![AstroTrips routed review](doc/screenshot-routed-review.png)
 
 ---
 
@@ -754,7 +754,7 @@ After saving the embeddings, reload them with review metadata and compute pairwi
 2. Check the `compute_similarity` task logs in the latest Dag run of `embed_reviews`. You should see review pairs with similarity scores.
 3. Open the **AstroTrips Support Portal**. Each review card now shows a **SIMILAR REVIEWS** section with similarity percentages.
 
-<img src="doc/screenshot-embedded-reviews.png" width="80%">
+![AstroTrips embedded reviews](doc/screenshot-embedded-reviews.png)
 
 ---
 
@@ -996,14 +996,14 @@ The `HITLBranchOperator` pauses the workflow and presents the drafted response f
 3. The `respond_reviews` Dag pauses at the HITL step. It will generate one HITL interaction per review. Navigate to _Browse_ → _Required Actions_.
 4. After a bit, some required actions will appear.
 
-<img src="doc/screenshot-required-actions.png" width="80%">
+![Required actions list](doc/screenshot-required-actions.png)
 
-<img src="doc/screenshot-hitl-form.png" width="80%">
+![Human-in-the-loop form](doc/screenshot-hitl-form.png)
 
 5. Select **Approve** or **Reject** for the reviews. As we limited parallelism to 4, you have to wait for new ones to appear after handling some of them. Once all 8 reviews responses are approved or rejected, we are ready to check the final result.
 6. Open the **AstroTrips Support Portal**! Approved reviews show a green status box, rejected reviews show a red one.
 
-<img src="doc/screenshot-final-state.png" width="80%">
+![Final review state](doc/screenshot-final-state.png)
 
 ---
 
