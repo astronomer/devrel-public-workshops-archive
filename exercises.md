@@ -136,7 +136,7 @@ This is not only a feedback mechanism that gives you something visual to review 
 > [!NOTE]
 > Building plugins is not part of this workshop. The portal is pre-built to support the exercises and give you a visual overview of your progress. If you're curious about the implementation, explore `plugins/support_portal.py` after the workshop.
 
-> [!IMPORTANT]
+> [!CAUTION]
 > You will also see a `plugin_sync` Dag in the Airflow UI. This Dag keeps the support portal data in sync and triggers automatically whenever a pipeline Dag completes. **Leave it activated and do not modify it.**
 
 > [!TIP]
@@ -146,4 +146,224 @@ This is not only a feedback mechanism that gives you something visual to review 
 
 # Exercise 1: Analyze reviews with an LLM
 
-wip
+In this exercise, you will build a Dag that uses an LLM to analyze customer reviews. The LLM extracts structured data (_sentiment, category, and a summary_) from each review. Some reviews include photos, so the Dag also uses vision capabilities to describe what the image shows.
+
+**What you will learn:**
+
+- Calling an LLM with `@task.llm` and getting structured output via a Pydantic model.
+- Sending images to a vision-capable LLM with `BinaryContent`.
+- Using `.expand_kwargs()` to dynamically map over multiple arguments.
+- Publishing an asset to trigger downstream Dags.
+
+## Create the Dag file
+
+1. In the Astro IDE, create a new file `dags/analyze_reviews.py`.
+2. Add the following imports and constants:
+
+    ```python
+    import airflow_ai_sdk as ai_sdk
+    import os
+    from pendulum import duration
+    from airflow.configuration import AIRFLOW_HOME
+    from airflow.providers.common.sql.operators.sql import (
+        SQLExecuteQueryOperator,
+        SQLInsertRowsOperator,
+    )
+    from airflow.sdk import Asset, chain, dag, task
+    from pydantic_ai import BinaryContent
+    from typing import Literal
+
+    _DUCKDB_CONN_ID = "duckdb_astrotrips"
+    ```
+
+3. Define the Dag:
+
+    ```python
+    @dag(
+        tags=["astrotrips", "ai", "reviews"],
+        template_searchpath=f"{AIRFLOW_HOME}/include/sql",
+        default_args={"retries": 3, "retry_delay": duration(seconds=10)},
+    )
+    def analyze_reviews():
+        pass
+
+    analyze_reviews()
+    ```
+
+> [!NOTE]
+> This Dag has no `schedule` — it is triggered manually. The `default_args` add retry logic since DuckDB can throw temporary lock errors when multiple tasks write concurrently.
+
+> [!NOTE]
+> `pass` is a null operation that acts as a placeholder when a statement is syntactically required but no action needs to run. We use it as a temporary placeholder for Dag or task implementations, which we will complete step by step during the workshop exercises.
+
+## Define the output model
+
+The LLM should return structured data, not free text.
+
+1. Define a Pydantic model **above** the `@dag` function that describes the expected output:
+
+    ```python
+    class ReviewAnalysis(ai_sdk.BaseModel):
+        sentiment: Literal["positive", "negative", "neutral"]
+        category: Literal["safety", "service", "value", "experience"]
+        summary: str
+        image_description: str | None = None
+    ```
+
+The `airflow-ai-sdk` provides its own `BaseModel` that auto-serializes results for XCom. Using `Literal` types constrains the LLM to only return valid values.
+
+## Add the query and formatting tasks
+
+1. Inside the Dag function (`analyze_reviews()`) function, add a `SQLExecuteQueryOperator` to run a query, which fetches all pending reviews:
+
+    ```python
+    _reviews = SQLExecuteQueryOperator(
+        task_id="get_reviews",
+        conn_id=_DUCKDB_CONN_ID,
+        sql=(
+            "SELECT review_id, booking_id, review_text, image_path, "
+            "CAST(submitted_at AS VARCHAR) AS submitted_at "
+            "FROM trip_reviews WHERE status = 'pending'"
+        ),
+    )
+    ```
+
+2. Add a task to format the query results into the shape expected by the LLM task:
+
+    ```python
+    @task
+    def format_context(query_result):
+        return [
+            {"review_text": row[2], "image_path": row[3]}
+            for row in query_result
+        ]
+
+    _formatted_context = format_context(_reviews.output)
+    ```
+
+> [!NOTE]
+> When passing the result of a `SQLExecuteQueryOperator` to a `@task` function, you must use `.output` to get the XCom value. This is one way of passing data between classic operators and TaskFlow API based tasks.
+
+## Add the LLM analysis task
+
+This is the core of the exercise. The `@task.llm` decorator turns a regular Python function into an LLM-powered task.
+
+1. Add the LLM task:
+
+    ```python
+    @task.llm(
+        model="gpt-5-mini",
+        system_prompt=(
+            "You are a customer review analyst for AstroTrips, an interplanetary travel company. "
+            "Analyze the given trip review and extract:\n"
+            "- sentiment: positive, negative, or neutral\n"
+            "- category: the primary category of the review:\n"
+            "  - safety: concerns about travel safety, turbulence, landings, equipment\n"
+            "  - service: crew/staff quality, communication, onboard experience\n"
+            "  - value: pricing, billing, value-for-money complaints\n"
+            "  - experience: the trip itself, destinations, sightseeing, overall enjoyment\n"
+            "- summary: a single concise sentence summarizing the review\n"
+            "- image_description: if an image is attached, describe what it shows in 1-2 sentences. "
+            "If no image is attached, set this to null."
+        ),
+        output_type=ReviewAnalysis,
+        max_active_tis_per_dagrun=1
+    )
+    def analyze_review(review_text: str, image_path: str | None = None) -> str | list:
+        if image_path:
+            full_path = os.path.join(AIRFLOW_HOME, "include", image_path)
+            with open(full_path, "rb") as f:
+                image_data = f.read()
+            return [review_text, BinaryContent(data=image_data, media_type="image/jpeg")]
+        return review_text
+    ```
+
+    The function body is a **translation function**, it returns the prompt that gets sent to the LLM. When an image is present, it returns a list with both the text and the image data. The LLM receives both and can describe what it sees. Take note how the system prompt is defined as an argument of the decorator.
+
+2. Next, we analyze each review individually, along with its image (_if present_). The number of task instances is determined at runtime. To create parallel task instances at runtime, we use a feature called dynamic task mapping. We do this by calling `expand` on a task, or in this case, `expand_kwargs` to pass multiple arguments:
+
+    ```python
+    _analyses = analyze_review.expand_kwargs(_formatted_context)
+    ```
+
+> [!NOTE]
+> We use `.expand_kwargs()` instead of `.expand()` here because each review needs **two** arguments (`review_text` and `image_path`). With `.expand()`, passing two keyword arguments would create a cross product of all combinations. The `expand_kwargs()` method maps them as pairs.
+
+> [!NOTE]
+> We can limit parallelism using `max_active_tis_per_dagrun`. In this case, we process each review one at a time to keep the load on our test deployment as low as possible.
+
+> [!TIP]
+> Learn more about the [airflow-ai-sdk](https://www.astronomer.io/docs/learn/airflow-ai-sdk) and [dynamic task mapping](https://www.astronomer.io/docs/learn/dynamic-tasks).
+
+## Add the save task
+
+The LLM results need to be written back to the database. We'll collect all analyses together with the original review data and insert them using a delete-then-insert pattern.
+
+1. Add a task to combine the original query data with the LLM output:
+
+    ```python
+    @task
+    def prepare_rows(query_result, analyses):
+        rows = []
+        for row, analysis in zip(query_result, analyses):
+            review_id, booking_id, review_text, image_path, submitted_at = row
+            rows.append((
+                review_id,
+                booking_id,
+                review_text,
+                image_path,
+                submitted_at,
+                "analyzed",
+                analysis["sentiment"],
+                analysis["category"],
+                analysis["summary"],
+                analysis.get("image_description"),
+            ))
+        return rows
+
+    _prepared_rows = prepare_rows(_reviews.output, _analyses)
+    ```
+
+2. Add the `SQLInsertRowsOperator` to save the results. The `outlets` parameter declares that this task updates the `analyzed-reviews` asset, which will trigger downstream Dags:
+
+    ```python
+    _save_analysis = SQLInsertRowsOperator(
+        task_id="save_analyses",
+        conn_id=_DUCKDB_CONN_ID,
+        table_name="trip_reviews",
+        rows=_prepared_rows,
+        columns=[
+            "review_id", "booking_id", "review_text", "image_path", "submitted_at",
+            "status", "sentiment", "category", "summary", "image_analysis",
+        ],
+        preoperator="DELETE FROM trip_reviews WHERE status = 'pending'",
+        outlets=[Asset("analyzed-reviews")],
+    )
+    ```
+
+3. Wire it up:
+
+    ```python
+    chain(_prepared_rows, _save_analysis)
+    ```
+
+## Test your Dag
+
+1. Sync your changes to the test deployment.
+
+> [!TIP]
+> **Sync tips:**
+> - Changes to Dag files sync fast. Changes to files in `include/` trigger an image rebuild, which takes longer.
+> - While waiting for a sync, you can ask the Astro IDE AI questions about your Dag or about Airflow.
+> - You don't need to commit your changes. If you want to keep your code after the workshop, fork the repository first.
+
+2. Trigger the `analyze_reviews` Dag.
+3. Once complete, open the **AstroTrips Support Portal**. You should see all 8 reviews with AI analysis results (sentiment, category, summary) and image descriptions for the 3 reviews that have photos.
+
+![AstroTrips analyzed review](doc/screenshot-analyzed-review.png)
+
+---
+
+# Exercise 2: Route reviews with LLM branching
+
+tbd

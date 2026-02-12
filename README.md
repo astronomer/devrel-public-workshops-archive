@@ -24,9 +24,11 @@ As AstroTrips grows, customer reviews are piling up. The support team is overwhe
 
 Throughout this workshop, you will work as an AI engineer at AstroTrips. Your task is to build and extend Airflow Dags that process customer reviews using LLMs, embeddings, and agents, while focusing on best practices rather than domain complexity.
 
-![AstroTrips](doc/astrotrips.png)
+![AstroTrips](doc/astrotrips-banner.png)
 
 The underlying database used for AstroTrips is DuckDB, and it comes with a set of base tables and might be extended with additional tables depending on the workshop.
+
+![AstroTrips](doc/astrotrips-base-tables.png)
 
 ## OpenAI API key
 
