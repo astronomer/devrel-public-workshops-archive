@@ -552,9 +552,11 @@ Each branch runs a `SQLExecuteQueryOperator` that updates the review's status an
 
 ## Test your Dag
 
-1. Sync and trigger the `analyze_reviews` Dag. Once it completes, the `route_reviews` Dag should trigger **automatically** via the asset.
-2. While it is running, check the graph view of `route_reviews`. You should see the task group expanded with branching per review. Make yourself familiar with the different views Airflow offers, can you find the log output of individual task instances?
-3. Open the **AstroTrips Support Portal**! Reviews should now show a purple **ROUTED TO** box indicating the assigned team.
+1. Sync your changes.
+2. Trigger the `setup` Dag manually to reset the state.
+3. Trigger the `analyze_reviews` Dag. Once it completes, the `route_reviews` Dag should trigger **automatically** via the asset.
+4. While it is running, check the graph view of `route_reviews`. You should see the task group expanded with branching per review. Make yourself familiar with the different views Airflow offers, can you find the log output of individual task instances?
+5. Open the **AstroTrips Support Portal**! Reviews should now show a purple **ROUTED TO** box indicating the assigned team.
 
 ![AstroTrips routed review](doc/screenshot-routed-review.png)
 
@@ -569,8 +571,9 @@ Within your `route_reviews` Dag:
 1. Import the `MissionControlOperator` from `include.mission_control`.
 2. Create a task instance with `task_id="mission_control"`.
 3. Add it as the **last step** in the `route_reviews` Dag's task chain (after `routing_complete`).
-4. Sync your changes and trigger `route_reviews` manually from the Dags page.
-5. Open the latest run and check the `mission_control` task logs for your clearance code and share it!
+4. Sync your changes.
+5. Trigger the `analyze_reviews` Dag. It will trigger the `route_reviews` Dag again, and once completed, you are ready to retrieve the clearance code.
+5. Open the latest run of `route_reviews` and check the `mission_control` task logs for your clearance code and share it!
 
 > [!IMPORTANT]
 > The first 3 that finish this challenge successfully receive a gift from Astronomer!
