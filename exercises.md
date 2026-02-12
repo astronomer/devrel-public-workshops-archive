@@ -83,7 +83,7 @@ The AI exercises require an OpenAI API key (or any compatible provider). We will
     - Mark it as **Secret**
     - Set **AUTOMATICALLY LINK TO ALL DEPLOYMENTS** to _On_
 
-    <img src="doc/screenshot-add-env-var.png" style="max-width: 70%;">
+    <img src="doc/screenshot-add-env-var.png" style="max-width: 50%;">
 
 3. Click _Create Environment Variable_.
 
