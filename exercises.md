@@ -293,7 +293,7 @@ This is the core of the exercise. The `@task.llm` decorator turns a regular Pyth
 > We can limit parallelism using `max_active_tis_per_dagrun`. In this case, we process each review one at a time to keep the load on our test deployment as low as possible.
 
 > [!TIP]
-> Learn more about the [airflow-ai-sdk](https://www.astronomer.io/docs/learn/airflow-ai-sdk) and [dynamic task mapping](https://www.astronomer.io/docs/learn/dynamic-tasks).
+> Learn more about the [airflow-ai-sdk](https://github.com/astronomer/airflow-ai-sdk) and [dynamic task mapping](https://www.astronomer.io/docs/learn/dynamic-tasks).
 
 ## Add the save task
 
@@ -349,7 +349,7 @@ The LLM results need to be written back to the database. We'll collect all analy
 
 ## Test your Dag
 
-1. Sync your changes to the test deployment.
+1. Sync your changes to the test deployment by clicking _Sync to Test_ within the Astro IDE.
 
 > [!TIP]
 > **Sync tips:**
@@ -366,4 +366,217 @@ The LLM results need to be written back to the database. We'll collect all analy
 
 # Exercise 2: Route reviews with LLM branching
 
-tbd
+In this exercise, you will build a Dag that routes each analyzed review to the right support team using LLM-powered branching. The LLM reads each review and decides which downstream task to run.
+
+**What you will learn:**
+
+- Using `@task.llm_branch` for LLM-powered Dag branching.
+- Combining branching with `@task_group` and `.expand()` for per-item routing.
+- Asset-aware scheduling to trigger this Dag automatically.
+
+## Create the Dag file
+
+1. Create `dags/route_reviews.py` with the following imports:
+
+    ```python
+    import pendulum
+    from airflow.configuration import AIRFLOW_HOME
+    from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
+    from airflow.sdk import Asset, dag, task, task_group, chain
+
+    _DUCKDB_CONN_ID = "duckdb_astrotrips"
+    ```
+
+2. Define the Dag with **asset-aware scheduling**. This Dag should trigger automatically whenever the `analyzed-reviews` asset is updated:
+
+    ```python
+    @dag(
+        schedule=Asset("analyzed-reviews"),
+        tags=["astrotrips", "ai", "reviews"],
+        template_searchpath=f"{AIRFLOW_HOME}/include/sql",
+        default_args={"retries": 3, "retry_delay": pendulum.duration(seconds=10)},
+    )
+    def route_reviews():
+        pass
+
+    route_reviews()
+    ```
+
+> [!TIP]
+> Learn more about [asset-aware scheduling](https://www.astronomer.io/docs/learn/airflow-datasets).
+
+## Add the query and formatting tasks
+
+1. Inside the `route_reviews()` function, fetch all analyzed reviews and format them:
+
+    ```python
+    _reviews = SQLExecuteQueryOperator(
+        task_id="get_reviews",
+        conn_id=_DUCKDB_CONN_ID,
+        sql=(
+            "SELECT review_id, review_text, sentiment, category, summary "
+            "FROM trip_reviews WHERE status = 'analyzed' "
+            "ORDER BY submitted_at ASC"
+        ),
+    )
+
+    @task
+    def prepare_review_list(query_result):
+        if not query_result:
+            return []
+        return [
+            {
+                "review_id": row[0],
+                "text": row[1],
+                "sentiment": row[2],
+                "category": row[3],
+                "summary": row[4],
+            }
+            for row in query_result
+        ]
+
+    _review_list = prepare_review_list(_reviews.output)
+    ```
+
+## Build the routing task group
+
+Dynamic task mapping lets you create parallel instances of an atomic task at runtime. But what if a single task is not enough? You can also apply this feature to task groups, which contain one or more tasks (or other task groups). This approach allows you to dynamically generate parallel instances of more complex workflows.
+
+Each review needs to be routed individually. We use a `@task_group` with `.expand()` to process each review as its own branching pipeline.
+
+1. As a first step, define the task group which receives a single review as an argument, together with a task to prepare the context we will later pass to the LLM branching task:
+
+    ```python
+    @task_group(default_args={"max_active_tis_per_dagrun": 1})
+    def handle_review(review_data):
+
+        @task
+        def format_context(data):
+            return (
+                f"Review #{data['review_id']} (sentiment: {data['sentiment']}, "
+                f"category: {data['category']}):\n"
+                f"Summary: {data['summary']}\n\n"
+                f"Full review:\n{data['text']}"
+            )
+
+        _formatted_context = format_context(review_data)
+    ```
+
+2. Add the LLM branching task **inside of the task group**! The `@task.llm_branch` decorator lets the LLM choose which downstream task to execute. The downstream task IDs become the options:
+
+    ```python
+        @task.llm_branch(
+            model="gpt-5-mini",
+            system_prompt=(
+                "You are a support ticket router for AstroTrips, an interplanetary travel company. "
+                "Based on the customer review below, decide which team should handle it.\n\n"
+                "Choose exactly one of the following task IDs:\n"
+                "- route_refund: The customer has a billing complaint, feels overcharged, "
+                "or is questioning the value for money. Route here for potential refund processing.\n"
+                "- route_safety: The customer reports a safety concern such as rough landings, "
+                "turbulence, equipment warnings, or anything that could endanger passengers.\n"
+                "- route_marketing: The customer left a very positive review praising "
+                "the experience. Route here so marketing can use it as a testimonial.\n"
+                "- route_general: The review contains mixed feedback about service quality, "
+                "suggestions for improvement, or does not clearly fit the other categories."
+            ),
+        )
+        def route_review(review_text: str) -> str:
+            return review_text
+
+        _route_review = route_review(_formatted_context)
+    ```
+
+    The LLM reads the system prompt (which describes the options) and the formatted review, then returns one of the task IDs. Airflow uses that to decide which downstream branch to run.
+
+## Add the routing handlers
+
+Each branch runs a `SQLExecuteQueryOperator` that updates the review's status and assigned team in the database.
+
+**Ensure to add the code of all three steps within the task group**!
+
+1. Add a helper task and the four routing handlers inside the task group. Each one uses the **`parameters`** keyword with DuckDB's `$variable` syntax for safe parameter binding:
+
+    ```python
+        @task
+        def extract_id(review_data):
+            return review_data["review_id"]
+
+        _id = extract_id(review_data)
+    ```
+
+2. Now create the four `SQLExecuteQueryOperator` tasks. One for each routing destination. **Your task:** Add the refund task, and create the remaining three operators, using the task IDs: `route_safety`, `route_marketing`, and `route_general`, following the same pattern, changing only the `routed_to` value:
+
+    ```python
+        _route_refund = SQLExecuteQueryOperator(
+            task_id="route_refund",
+            conn_id=_DUCKDB_CONN_ID,
+            sql="UPDATE trip_reviews SET status = 'routed', routed_to = 'refund' WHERE review_id = $id::INT",
+            parameters={"id": _id}
+        )
+
+        # TODO: Add _route_safety (task_id = 'route_safety', routed_to = 'safety')
+        # TODO: Add _route_marketing (task_id = 'route_marketing', routed_to = 'marketing')
+        # TODO: Add _route_general (task_id = 'route_general', routed_to = 'general')
+    ```
+
+3. Wire the branch to the handlers within the task group:
+
+    ```python
+        chain(
+            _route_review, [
+                _route_refund,
+                _route_safety,
+                _route_marketing,
+                _route_general,
+            ]
+        )
+    ```
+
+## Wire up the Dag
+
+**Outside the task group**, expand it over the review list, add a completion task that emits an asset, and wire everything together.
+
+1. Add the completion task and wire up the Dag:
+
+    ```python
+    @task(outlets=[Asset("routed-reviews")], trigger_rule="none_failed_min_one_success")
+    def routing_complete():
+        print("Routing complete for all new reviews")
+
+    chain(
+        handle_review.expand(review_data=_review_list),
+        routing_complete(),
+    )
+    ```
+
+## Test your Dag
+
+1. Sync and trigger the `analyze_reviews` Dag. Once it completes, the `route_reviews` Dag should trigger **automatically** via the asset.
+2. While it is running, check the graph view of `route_reviews`. You should see the task group expanded with branching per review. Make yourself familiar with the different views Airflow offers, can you find the log output of individual task instances?
+3. Open the **AstroTrips Support Portal**! Reviews should now show a purple **ROUTED TO** box indicating the assigned team.
+
+![AstroTrips routed review](doc/screenshot-routed-review.png)
+
+---
+
+# Challenge: Mission control
+
+It is time for a challenge. The workshop provides a custom `MissionControlOperator` that generates an interstellar clearance code based on your implementation. Only if you finished all tasks successfully, including using the correct task IDs and dependencies, the code will be correct.
+
+Within your `route_reviews` Dag:
+
+1. Import the `MissionControlOperator` from `include.mission_control`.
+2. Create a task instance with `task_id="mission_control"`.
+3. Add it as the **last step** in the `route_reviews` Dag's task chain (after `routing_complete`).
+4. Sync your changes and trigger `route_reviews` manually from the Dags page.
+5. Open the latest run and check the `mission_control` task logs for your clearance code and share it!
+
+> [!IMPORTANT]
+> The first 3 that finish this challenge successfully receive a gift from Astronomer!
+
+---
+
+# Exercise 3: Embed reviews and find similar complaints
+
+wip
