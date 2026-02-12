@@ -61,6 +61,7 @@ def _serialize(obj):
         | Asset("analyzed-reviews")
         | Asset("routed-reviews")
         | Asset("embedded-reviews")
+        | Asset("responded-reviews")
     ),
     tags=["astrotrips", "plugin"],
     default_args={

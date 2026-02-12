@@ -758,4 +758,255 @@ After saving the embeddings, reload them with review metadata and compute pairwi
 
 ---
 
-wip
+# Exercise 4: AI agent with human-in-the-loop
+
+In this final exercise, you will build a Dag where an AI agent drafts personalized responses to each review using tool functions that look up booking data and find similar reviews. Each draft is then presented to a human for approval or rejection.
+
+**What you will learn:**
+
+- Building an AI agent with `@task.agent` and custom tools.
+- Conditional asset-aware scheduling.
+- Using human-in-the-loop for interactive pipelines.
+- Using `HITLBranchOperator` for approve/reject branching.
+- Combining agents, tools, HITL, and SQL operators in a single Dag.
+
+## Review the agent tools
+
+The agent needs access to booking data and review similarity. These tools run inside the AI agent's loop, not as Airflow tasks, so they use `duckdb.connect()` directly instead of Airflow hooks.
+
+Open `include/agent_tools.py` and review the two pre-built tools. No need to change anything, just read through them to get a basic understanding:
+
+- **`lookup_booking(booking_id)`**: Queries the bookings, customers, routes, and payments tables to return a formatted summary of a customer's trip (destination, dates, fare, passengers).
+- **`find_similar_reviews(review_id)`**: Fetches the review's embedding from `review_embeddings`, computes cosine similarity against all other reviews, and returns the top 3 most similar ones with their text, sentiment, and category.
+
+Both tools connect to DuckDB in read-only mode and get the database path from the Airflow connection (`duckdb_astrotrips`). This is necessary because agent tools run inside the [Pydantic AI](https://ai.pydantic.dev/) (the basis for the Airflow AI SDK) loop, where no Airflow task context is available.
+
+> [!NOTE]
+> The `find_similar_reviews` tool reuses the same cosine similarity approach you saw in Exercise 3's `compute_similarity` task. The embeddings stored by the `embed_reviews` Dag are now available for the agent to query at response time.
+
+## Create the Dag file
+
+1. Create `dags/respond_reviews.py`:
+
+    ```python
+    import pendulum
+    from airflow.configuration import AIRFLOW_HOME
+    from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
+    from airflow.providers.standard.operators.hitl import HITLBranchOperator
+    from airflow.sdk import Asset, chain, dag, task, task_group
+    from pydantic_ai import Agent
+
+    from include.agent_tools import find_similar_reviews, lookup_booking
+
+    _DUCKDB_CONN_ID = "duckdb_astrotrips"
+    ```
+
+2. Define the Dag. This Dag should trigger whenever **both** routing and embedding are updated:
+
+    ```python
+    @dag(
+        schedule=(Asset("routed-reviews") & Asset("embedded-reviews")),
+        tags=["astrotrips", "ai", "reviews", "hitl"],
+        template_searchpath=f"{AIRFLOW_HOME}/include/sql",
+        default_args={"retries": 3, "retry_delay": pendulum.duration(seconds=10)},
+    )
+    def respond_reviews():
+        pass
+
+    respond_reviews()
+    ```
+
+> [!NOTE]
+> The `&` operator creates a **conditional asset** statement, meaning this Dag only triggers when both assets have been updated.
+
+## Add the query and task group
+
+1. Add tasks to fetch routed reviews that don't have a response yet and prepare them for further usage:
+
+    ```python
+    _reviews = SQLExecuteQueryOperator(
+        task_id="get_reviews",
+        conn_id=_DUCKDB_CONN_ID,
+        sql=(
+            "SELECT review_id, booking_id, review_text, sentiment, category, summary "
+            "FROM trip_reviews WHERE status = 'routed' AND ai_response IS NULL "
+            "ORDER BY submitted_at ASC"
+        ),
+    )
+
+    @task
+    def prepare_review_list(query_result):
+        if not query_result:
+            return []
+        return [
+            {
+                "review_id": row[0],
+                "booking_id": row[1],
+                "text": row[2],
+                "sentiment": row[3],
+                "category": row[4],
+                "summary": row[5],
+            }
+            for row in query_result
+        ]
+
+    _review_list = prepare_review_list(_reviews.output)
+    ```
+
+2. Create the task group for per-review processing, and add a task to prepare the context for the agent inference:
+
+    ```python
+    @task_group(default_args={"max_active_tis_per_dagrun": 4})
+    def respond_one_review(review_data):
+
+        @task
+        def format_context(data):
+            return (
+                f"Review #{data['review_id']} (booking #{data['booking_id']}):\n"
+                f"Category: {data['category']} | Sentiment: {data['sentiment']}\n"
+                f"Summary: {data['summary']}\n\n"
+                f"Full review:\n{data['text']}"
+            )
+    ```
+
+> [!NOTE]
+> With `default_args` on task group level, we can set options that are automatically propagated to all tasks within the task group. This is also possible on Dag level. In this case, we limit the parallelism for each task to 4.
+
+## Add the agent and save tasks
+
+1. **Inside the task group**, define the AI agent. The `@task.agent` decorator takes a `pydantic_ai.Agent` instance with the tools you've seen before:
+
+    ```python
+        @task.agent(agent=Agent(
+            "gpt-5-mini",
+            system_prompt=(
+                "You are a customer service agent for AstroTrips, an interplanetary travel company. "
+                "Your job is to draft a professional, empathetic response to a customer's trip review.\n\n"
+                "Guidelines:\n"
+                "- Use the lookup_booking tool to find the customer's booking details.\n"
+                "- Use the find_similar_reviews tool to see how similar feedback was handled.\n"
+                "- Address the customer's specific concerns with empathy.\n"
+                "- Reference concrete details from their booking (destination, dates, fare paid).\n"
+                "- For safety concerns: acknowledge and assure investigation.\n"
+                "- For billing issues: reference actual amounts and offer to review.\n"
+                "- For positive reviews: thank them warmly and invite them back.\n"
+                "- Keep the response under 200 words.\n"
+                "- Sign off as 'AstroTrips Customer Experience Team'."
+            ),
+            tools=[lookup_booking, find_similar_reviews],
+        ))
+        def draft_response(prompt: str) -> str:
+            return prompt
+    ```
+
+2. **Inside the task group**, add the extract and save tasks:
+
+    ```python
+        @task
+        def extract_id(data):
+            return data["review_id"]
+
+        _context = format_context(review_data)
+        _response = draft_response(_context)
+        _id = extract_id(review_data)
+
+        _save_draft = SQLExecuteQueryOperator(
+            task_id="save_draft",
+            conn_id=_DUCKDB_CONN_ID,
+            sql=(
+                "UPDATE trip_reviews SET status = 'response_drafted', "
+                "ai_response = $response WHERE review_id = $id::INT"
+            ),
+            parameters={"id": _id, "response": _response},
+            max_active_tis_per_dagrun=1,
+        )
+    ```
+
+> [!NOTE]
+> Here, we override the `max_active_tis_per_dagrun` set on task group level for an individual task. In this case, we must avoid parallel access to the DuckDB file.
+
+## Add the HITL approval step
+
+The `HITLBranchOperator` pauses the workflow and presents the drafted response for human review. The operator supports friendly labels via `options_mapping`.
+
+1. Add the HITL branch and the two downstream handlers **within the task group**:
+
+    ```python
+        _review_branch = HITLBranchOperator(
+            task_id="review_response",
+            subject="Review response approval",
+            body=(
+                "Please review the AI-drafted response and approve or reject it.\n\n"
+                "**Review ID:** {{ ti.xcom_pull(task_ids='respond_one_review.extract_id', map_indexes=ti.map_index) }}\n\n"
+                "**Drafted response:**\n\n"
+                "{{ ti.xcom_pull(task_ids='respond_one_review.draft_response', map_indexes=ti.map_index) }}"
+            ),
+            options=["Approve", "Reject"],
+            options_mapping={
+                "Approve": "respond_one_review.finalize",
+                "Reject": "respond_one_review.mark_rejected",
+            },
+        )
+
+        _finalize = SQLExecuteQueryOperator(
+            task_id="finalize",
+            conn_id=_DUCKDB_CONN_ID,
+            sql=(
+                "UPDATE trip_reviews SET status = 'approved', "
+                "approved_at = CURRENT_TIMESTAMP WHERE review_id = $id::INT"
+            ),
+            parameters={"id": _id},
+            max_active_tis_per_dagrun=1,
+        )
+
+        _mark_rejected = SQLExecuteQueryOperator(
+            task_id="mark_rejected",
+            conn_id=_DUCKDB_CONN_ID,
+            sql="UPDATE trip_reviews SET status = 'rejected' WHERE review_id = $id::INT",
+            parameters={"id": _id},
+            max_active_tis_per_dagrun=1,
+        )
+
+        chain(_save_draft, _review_branch, [_finalize, _mark_rejected])
+    ```
+
+> [!NOTE]
+> Task IDs inside a task group must use the full prefixed path (e.g., `respond_one_review.finalize`), not just the local name.
+
+2. Add a task to update an asset indicating that the response generation is complete, and expand the task group **outside the task group, within the Dag function**:
+
+    ```python
+    @task(outlets=[Asset("responded-reviews")], trigger_rule="none_failed_min_one_success")
+    def response_gen_complete():
+        print("Response generation complete for all new reviews")
+
+    chain(
+        respond_one_review.expand(review_data=_review_list),
+        response_gen_complete()
+    )
+    ```
+
+> [!TIP]
+> Learn more about [human-in-the-loop workflows](https://www.astronomer.io/docs/learn/airflow-human-in-the-loop).
+
+## Test the full pipeline
+
+1. Sync your changes. Re-run the `setup` Dag to reset the database, then trigger `analyze_reviews`.
+2. The full pipeline cascades: analyze → route → embed → respond, all based on asset-aware scheduling.
+3. The `respond_reviews` Dag pauses at the HITL step. It will generate one HITL interaction per review. Navigate to _Browse_ → _Required Actions_.
+4. After a bit, some required actions will appear.
+
+![Required actions list](doc/screenshot-required-actions.png)
+
+![Human-in-the-loop form](doc/screenshot-hitl-form.png)
+
+5. Select **Approve** or **Reject** for the reviews. As we limited parallelism to 4, you have to wait for new ones to appear after handling some of them. Once all 8 reviews responses are approved or rejected, we are ready to check the final result.
+6. Open the **AstroTrips Support Portal**! Approved reviews show a green status box, rejected reviews show a red one.
+
+![Final review state](doc/screenshot-final-state.png)
+
+---
+
+Congratulations! You've built a complete AI-powered review pipeline with Apache Airflow and demonstrated how it can power a company's support platform, showing that Airflow is the de facto orchestrator for complex data, ML, and AI workflows.
+
+The pipeline analyzes reviews with an LLM, routes them to the appropriate team, identifies similar complaints using embeddings, drafts personalized responses with an AI agent, and allows a human to approve or reject each one. It orchestrates all of this as a chain of asset-triggered Dags.

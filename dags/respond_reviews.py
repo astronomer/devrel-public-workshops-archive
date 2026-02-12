@@ -135,7 +135,14 @@ def respond_reviews():
 
         chain(_save_draft, _review_branch, [_finalize, _mark_rejected])
 
-    respond_one_review.expand(review_data=_review_list)
+    @task(outlets=[Asset("responded-reviews")], trigger_rule="none_failed_min_one_success")
+    def response_gen_complete():
+        print("Response generation complete for all new reviews")
+
+    chain(
+        respond_one_review.expand(review_data=_review_list),
+        response_gen_complete()
+    )
 
 
 respond_reviews()

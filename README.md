@@ -1,3 +1,5 @@
+![Workshop Airflow version](https://img.shields.io/badge/Airflow_version-3.1-blue?style=for-the-badge)
+
 # Apache Airflow - AI Workshop
 
 Welcome to the Apache Airflow AI workshop! You will build an AI-powered customer review intelligence pipeline using the [airflow-ai-sdk](https://github.com/astronomer/airflow-ai-sdk) and Apache Airflow 3.
@@ -29,10 +31,6 @@ Throughout this workshop, you will work as an AI engineer at AstroTrips. Your ta
 The underlying database used for AstroTrips is DuckDB, and it comes with a set of base tables and might be extended with additional tables depending on the workshop.
 
 ![AstroTrips](doc/astrotrips-base-tables.png)
-
-## OpenAI API key
-
-This workshop uses OpenAI-compatible models for LLM tasks. You will need an API key from [OpenAI](https://platform.openai.com/api-keys) or any compatible provider. The key is configured as an environment variable (`OPENAI_API_KEY`) during the setup exercise. Embeddings run locally via sentence-transformers and do not require an API key.
 
 ## Using MotherDuck (optional)
 
@@ -67,6 +65,10 @@ AIRFLOW_CONN_DUCKDB_ASTROTRIPS='{
 > This optional step can be skipped for regular workshop participation. It is intended for advanced exploration after the workshop.
 
 Workshops can also be worked on using the Astro CLI and a local, containerized Airflow setup. Copy `.env.dist` to `.env` and add your `OPENAI_API_KEY`, then adjust the configuration values if needed. You can start the project with `astro dev start`. However, these workshops are primarily designed for use with the Astro IDE.
+
+## OpenAI API key
+
+This workshop uses OpenAI-compatible models for LLM tasks. You will need an API key from [OpenAI](https://platform.openai.com/api-keys) or any compatible provider. The key is configured as an environment variable (`OPENAI_API_KEY`) during the setup exercise. Embeddings run locally via sentence-transformers and do not require an API key.
 
 ## Get started
 
