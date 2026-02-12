@@ -579,4 +579,183 @@ Within your `route_reviews` Dag:
 
 # Exercise 3: Embed reviews and find similar complaints
 
+In this exercise, you will build a Dag that converts review text into vector embeddings and computes pairwise similarity. This lets the support team see which reviews are about similar issues, which is useful for identifying patterns and reusing past responses.
+
+**What you will learn:**
+
+- Using `@task.embed` for text embeddings with sentence-transformers.
+- Dynamic mapping with `.expand()` for parallel embedding.
+- Computing cosine similarity between vectors.
+
+## Create the Dag file
+
+1. Create `dags/embed_reviews.py`:
+
+    ```python
+    import pendulum
+    from airflow.configuration import AIRFLOW_HOME
+    from airflow.providers.common.sql.operators.sql import (
+        SQLExecuteQueryOperator,
+        SQLInsertRowsOperator,
+    )
+    from airflow.sdk import Asset, chain, dag, task
+
+    _DUCKDB_CONN_ID = "duckdb_astrotrips"
+    ```
+
+2. Define the Dag with asset-aware scheduling. It triggers when routing is complete:
+
+    ```python
+    @dag(
+        schedule=Asset("routed-reviews"),
+        tags=["astrotrips", "ai", "reviews", "embeddings"],
+        template_searchpath=f"{AIRFLOW_HOME}/include/sql",
+        default_args={"retries": 3, "retry_delay": pendulum.duration(seconds=10)},
+    )
+    def embed_reviews():
+        pass
+
+    embed_reviews()
+    ```
+
+## Add the embedding tasks
+
+1. Inside the `embed_reviews()` Dag function, fetch all non-pending reviews and extract the texts and IDs:
+
+    ```python
+    _reviews = SQLExecuteQueryOperator(
+        task_id="get_reviews",
+        conn_id=_DUCKDB_CONN_ID,
+        sql="SELECT review_id, review_text FROM trip_reviews WHERE status != 'pending'",
+    )
+
+    @task
+    def extract_texts(query_result):
+        return [row[1] for row in query_result]
+
+    @task
+    def extract_ids(query_result):
+        return [row[0] for row in query_result]
+
+    _texts = extract_texts(_reviews.output)
+    _ids = extract_ids(_reviews.output)
+    ```
+
+2. Add the embedding task. The `@task.embed` decorator handles calling the embedding model for you:
+
+    ```python
+    @task.embed(
+        model_name="all-MiniLM-L6-v2",
+        max_active_tis_per_dagrun=1,
+    )
+    def embed_review(review_text: str) -> str:
+        return review_text
+
+    _embeddings = embed_review.expand(review_text=_texts)
+    ```
+
+> [!NOTE]
+> The `max_active_tis_per_dagrun=1` setting limits concurrent embedding tasks to avoid rate-limiting. The model `all-MiniLM-L6-v2` runs locally via sentence-transformers, no API key needed for embeddings.
+
+## Combine and save
+
+1. Add a task to pair each review ID with its embedding:
+
+    ```python
+    @task
+    def prepare_rows(review_ids, embeddings):
+        rows = []
+        for review_id, embedding in zip(review_ids, embeddings):
+            rows.append((review_id, embedding))
+        return rows
+
+    _prepared_rows = prepare_rows(_ids, _embeddings)
+    ```
+
+2. Save to the database:
+
+    ```python
+    _save_embeddings = SQLInsertRowsOperator(
+        task_id="save_embeddings",
+        conn_id=_DUCKDB_CONN_ID,
+        table_name="review_embeddings",
+        rows=_prepared_rows,
+        columns=["review_id", "embedding"],
+        preoperator="DELETE FROM review_embeddings",
+    )
+    ```
+
+We will call the save task later, when we wire up the Dag.
+
+## Add similarity computation
+
+After saving the embeddings, reload them with review metadata and compute pairwise cosine similarity to identify clusters.
+
+1. Add a query to fetch embeddings with their review context:
+
+    ```python
+    _get_embedded_reviews = SQLExecuteQueryOperator(
+        task_id="get_embedded_reviews",
+        conn_id=_DUCKDB_CONN_ID,
+        sql=(
+            "SELECT re.review_id, tr.review_text, tr.category, re.embedding "
+            "FROM review_embeddings re "
+            "JOIN trip_reviews tr ON tr.review_id = re.review_id "
+            "ORDER BY re.review_id"
+        ),
+    )
+    ```
+
+2. Add the similarity task that emits the `embedded-reviews` asset update, so the next Dag can trigger:
+
+    ```python
+    @task(outlets=[Asset("embedded-reviews")])
+    def compute_similarity(rows):
+        if not rows:
+            print("No embeddings found.")
+            return
+
+        def cosine_sim(a, b):
+            dot = sum(x * y for x, y in zip(a, b))
+            norm_a = sum(x * x for x in a) ** 0.5
+            norm_b = sum(x * x for x in b) ** 0.5
+            if norm_a == 0 or norm_b == 0:
+                return 0.0
+            return dot / (norm_a * norm_b)
+
+        print("::group::Top similar review pairs")
+        pairs = []
+        for i in range(len(rows)):
+            for j in range(i + 1, len(rows)):
+                sim = cosine_sim(rows[i][3], rows[j][3])
+                pairs.append((rows[i][0], rows[j][0], sim, rows[i][2], rows[j][2]))
+
+        pairs.sort(key=lambda x: x[2], reverse=True)
+
+        for r1_id, r2_id, sim, cat1, cat2 in pairs[:10]:
+            marker = " <-- same cluster" if cat1 == cat2 else ""
+            print(f"  Review #{r1_id} ({cat1}) <-> Review #{r2_id} ({cat2}): {sim:.3f}{marker}")
+        print("::endgroup::")
+    ```
+
+> [!NOTE]
+> Using `print`, the output will appear in the task log accessible via the Airflow UI. By using `::group::` and `::endgroup::`, Airflow automatically creates collapsible panels within the log view in the Airflow UI. This is great to structure the output and maintain readability.
+
+3. Wire up the tasks:
+
+    ```python
+    chain(_prepared_rows, _save_embeddings, _get_embedded_reviews)
+    compute_similarity(_get_embedded_reviews.output)
+    ```
+
+## Test your Dag
+
+1. Sync your changes. Trigger `embed_reviews` manually (we will run the full pipeline in the next exercise, but now we focus on the embeddings).
+2. Check the `compute_similarity` task logs in the latest Dag run of `embed_reviews`. You should see review pairs with similarity scores.
+3. Open the **AstroTrips Support Portal**. Each review card now shows a **SIMILAR REVIEWS** section with similarity percentages.
+
+![AstroTrips embedded reviews](doc/screenshot-embedded-reviews.png)
+
+---
+
 wip
