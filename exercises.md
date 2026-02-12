@@ -1010,3 +1010,5 @@ The `HITLBranchOperator` pauses the workflow and presents the drafted response f
 Congratulations! You've built a complete AI-powered review pipeline with Apache Airflow and demonstrated how it can power a company's support platform, showing that Airflow is the de facto orchestrator for complex data, ML, and AI workflows.
 
 The pipeline analyzes reviews with an LLM, routes them to the appropriate team, identifies similar complaints using embeddings, drafts personalized responses with an AI agent, and allows a human to approve or reject each one. It orchestrates all of this as a chain of asset-triggered Dags.
+
+We recommend checking out the linked resources and continuing to extend your project during your Astro trial.
