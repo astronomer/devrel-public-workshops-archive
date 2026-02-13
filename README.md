@@ -13,6 +13,9 @@ Welcome to the Apache Airflow AI workshop! You will build an AI-powered customer
 - Human-in-the-loop patterns for reviewing AI-generated content.
 - Asset-aware scheduling for chaining Dags together.
 
+> [!NOTE]
+> tl;dr: jump directly to the [exercises](exercises.md).
+
 ## Prerequisites
 
 - Access to the [Astro IDE](https://www.astronomer.io/product/ide/). _You don't need to set this up now. It is part of the exercise later._

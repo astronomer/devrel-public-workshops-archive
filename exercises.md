@@ -45,6 +45,9 @@ While a deep understanding of the Astro platform is not required, here is a quic
 
 ![Astro IDE](doc/screenshot-astro-ide.png)
 
+> [!NOTE]
+> You don't need to commit your changes. If you want to keep your code after the workshop, fork the repository first.
+
 > [!TIP]
 > The Astro IDE comes with an integrated AI assistant, optimized for workflow orchestration with Apache Airflow. Feel free to interact with it during this workshop to learn more about certain concepts.
 
@@ -54,6 +57,8 @@ This workshop relies on a DuckDB database. To ensure your test environments can 
 
 > [!NOTE]
 > The next two steps take place in the main Astro platform UI, not inside the Astro IDE. If you collapsed the sidebar, expand it to navigate.
+
+![Navigate to Connections](doc/screenshot-navigate-connections.png)
 
 1. In Astro, navigate to _Environment_ → _Connections_ and click the _+ Connection_ button.
 2. In the dialog, search for and select _Generic_, then enter the following details:
@@ -138,6 +143,9 @@ This is not only a feedback mechanism that gives you something visual to review 
 
 > [!CAUTION]
 > You will also see a `plugin_sync` Dag in the Airflow UI. This Dag keeps the support portal data in sync and triggers automatically whenever a pipeline Dag completes. **Leave it activated and do not modify it.**
+
+> [!CAUTION]
+> If the AstroTrips Support Portal still shows no entries, please be patient and refresh the page, the `plugin_sync` Dag needs to finish first.
 
 > [!TIP]
 > Learn more about [Airflow plugins](https://www.astronomer.io/docs/learn/using-airflow-plugins).
@@ -355,7 +363,6 @@ The LLM results need to be written back to the database. We'll collect all analy
 > **Sync tips:**
 > - Changes to Dag files sync fast. Changes to files in `include/` trigger an image rebuild, which takes longer.
 > - While waiting for a sync, you can ask the Astro IDE AI questions about your Dag or about Airflow.
-> - You don't need to commit your changes. If you want to keep your code after the workshop, fork the repository first.
 
 2. Trigger the `analyze_reviews` Dag.
 3. Once complete, open the **AstroTrips Support Portal**. You should see all 8 reviews with AI analysis results (sentiment, category, summary) and image descriptions for the 3 reviews that have photos.
@@ -572,8 +579,9 @@ Within your `route_reviews` Dag:
 2. Create a task instance with `task_id="mission_control"`.
 3. Add it as the **last step** in the `route_reviews` Dag's task chain (after `routing_complete`).
 4. Sync your changes.
-5. Trigger the `analyze_reviews` Dag. It will trigger the `route_reviews` Dag again, and once completed, you are ready to retrieve the clearance code.
-5. Open the latest run of `route_reviews` and check the `mission_control` task logs for your clearance code and share it!
+5. Trigger the `setup` Dag manually to reset the state.
+6. Trigger the `analyze_reviews` Dag. It will trigger the `route_reviews` Dag again, and once completed, you are ready to retrieve the clearance code.
+7. Open the latest run of `route_reviews` and check the `mission_control` task logs for your clearance code and share it!
 
 > [!IMPORTANT]
 > The first 3 that finish this challenge successfully receive a gift from Astronomer!
@@ -750,6 +758,9 @@ After saving the embeddings, reload them with review metadata and compute pairwi
     chain(_prepared_rows, _save_embeddings, _get_embedded_reviews)
     compute_similarity(_get_embedded_reviews.output)
     ```
+
+> [!TIP]
+> When passing embeddings through XCom, consider using a custom XCom backend in production. Learn more about [strategies for custom XCom backends in Airflow](https://www.astronomer.io/docs/learn/custom-xcom-backend-strategies).
 
 ## Test your Dag
 
