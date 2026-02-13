@@ -252,6 +252,26 @@ The `airflow-ai-sdk` provides its own `BaseModel` that auto-serializes results f
 > [!NOTE]
 > When passing the result of a `SQLExecuteQueryOperator` to a `@task` function, you must use `.output` to get the XCom value. This is one way of passing data between classic operators and TaskFlow API based tasks.
 
+## Test your Dag in the Astro IDE
+
+To get a better understanding of our Dag, let's run in right from the Astro IDE, without opening Airflow at all.
+
+1. Sync your changes to the test deployment by clicking _Sync to Test_ within the Astro IDE.
+2. Wait for the sync process to be complete, then switch to the Test view within the Astro IDE.
+
+    ![Open test tab within the Astro IDE](doc/screenshot-astro-ide-test-tab.png)
+
+3. Select the `analyze_review` Dag from the dropdown menu.
+4. Click on _Run Dag_ to run your Dag.
+
+    ![Run Dag from within the Astro IDE](doc/screenshot-astro-ide-test-run-dag.png)
+
+5. Wait for completion, and check the logs for the `format_context` task by selecting it.
+
+    ![Task logs within the Astro IDE](doc/screenshot-astro-ide-run-dag-logs.png)
+
+This is a great way to get an intermediate overview of your data pipeline implementation.
+
 ## Add the LLM analysis task
 
 This is the core of the exercise. The `@task.llm` decorator turns a regular Python function into an LLM-powered task.
