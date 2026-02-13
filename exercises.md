@@ -32,6 +32,9 @@ While a deep understanding of the Astro platform is not required, here is a quic
 
 ![Astro IDE](doc/screenshot-astro-ide.png)
 
+> [!NOTE]
+> You don't need to commit your changes. If you want to keep your code after the workshop, fork the repository first.
+
 > [!TIP]
 > The Astro IDE comes with an integrated AI assistant, optimized for workflow orchestration with Apache Airflow. Feel free to interact with it during this workshop to learn more about certain concepts.
 
@@ -41,6 +44,8 @@ This workshop relies on a DuckDB database. To ensure your test environments can 
 
 > [!NOTE]
 > The next two steps take place in the main Astro platform UI, not inside the Astro IDE. If you collapsed the sidebar, expand it to navigate.
+
+![Navigate to Connections](doc/screenshot-navigate-connections.png)
 
 1. In Astro, navigate to _Environment_ → _Connections_ and click the _+ Connection_ button.
 2. In the dialog, search for and select _Generic_, then enter the following details:

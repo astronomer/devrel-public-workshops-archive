@@ -4,6 +4,9 @@
 
 This is the base repository for workshop development. It will be updated with more common elements and future Airflow releases. Use this repository as the base branch when developing a new workshop.
 
+> [!NOTE]
+> tl;dr: jump directly to the [exercises](exercises.md).
+
 ## Prerequisites
 
 - Access to the [Astro IDE](https://www.astronomer.io/product/ide/).
