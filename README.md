@@ -13,6 +13,9 @@ Welcome to the Apache Airflow ELT/ETL workshop! You will build and orchestrate d
 - Data quality checks as part of your pipeline.
 - Human-in-the-loop patterns for manual intervention.
 
+> [!NOTE]
+> tl;dr: jump directly to the [exercises](exercises.md).
+
 ## Prerequisites
 
 - Access to the [Astro IDE](https://www.astronomer.io/product/ide/). _You don't need to set this up now. It is part of the exercise later._

@@ -45,6 +45,9 @@ While a deep understanding of the Astro platform is not required, here is a quic
 
 ![Astro IDE](doc/screenshot-astro-ide.png)
 
+> [!NOTE]
+> You don't need to commit your changes. If you want to keep your code after the workshop, fork the repository first.
+
 > [!TIP]
 > The Astro IDE comes with an integrated AI assistant, optimized for workflow orchestration with Apache Airflow. Feel free to interact with it during this workshop to learn more about certain concepts.
 
