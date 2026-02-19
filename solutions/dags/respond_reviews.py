@@ -1,5 +1,6 @@
 from pendulum import duration
 from airflow.configuration import AIRFLOW_HOME
+from airflow.exceptions import AirflowSkipException
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from airflow.providers.standard.operators.hitl import HITLBranchOperator
 from airflow.sdk import Asset, chain, dag, task, task_group
@@ -24,29 +25,27 @@ def respond_reviews():
         sql=(
             "SELECT review_id, booking_id, review_text, sentiment, category, summary "
             "FROM trip_reviews WHERE status = 'routed' AND ai_response IS NULL "
-            "ORDER BY submitted_at ASC"
+            "ORDER BY submitted_at ASC LIMIT 1"
         ),
     )
 
     @task
-    def prepare_review_list(query_result):
+    def prepare_review(query_result):
         if not query_result:
-            return []
-        return [
-            {
-                "review_id": row[0],
-                "booking_id": row[1],
-                "text": row[2],
-                "sentiment": row[3],
-                "category": row[4],
-                "summary": row[5],
-            }
-            for row in query_result
-        ]
+            raise AirflowSkipException("No unprocessed reviews found")
+        row = query_result[0]
+        return {
+            "review_id": row[0],
+            "booking_id": row[1],
+            "text": row[2],
+            "sentiment": row[3],
+            "category": row[4],
+            "summary": row[5],
+        }
 
-    _review_list = prepare_review_list(_reviews.output)
+    _review_data = prepare_review(_reviews.output)
 
-    @task_group(default_args={"max_active_tis_per_dagrun": 4})
+    @task_group
     def respond_one_review(review_data):
 
         @task
@@ -95,7 +94,6 @@ def respond_reviews():
                 "ai_response = $response WHERE review_id = $id::INT"
             ),
             parameters={"id": _id, "response": _response},
-            max_active_tis_per_dagrun=1,
         )
 
         _review_branch = HITLBranchOperator(
@@ -103,9 +101,9 @@ def respond_reviews():
             subject="Review response approval",
             body=(
                 "Please review the AI-drafted response and approve or reject it.\n\n"
-                "**Review ID:** {{ ti.xcom_pull(task_ids='respond_one_review.extract_id', map_indexes=ti.map_index) }}\n\n"
+                "**Review ID:** {{ ti.xcom_pull(task_ids='respond_one_review.extract_id') }}\n\n"
                 "**Drafted response:**\n\n"
-                "{{ ti.xcom_pull(task_ids='respond_one_review.draft_response', map_indexes=ti.map_index) }}"
+                "{{ ti.xcom_pull(task_ids='respond_one_review.draft_response') }}"
             ),
             options=["Approve", "Reject"],
             options_mapping={
@@ -122,7 +120,6 @@ def respond_reviews():
                 "approved_at = CURRENT_TIMESTAMP WHERE review_id = $id::INT"
             ),
             parameters={"id": _id},
-            max_active_tis_per_dagrun=1,
         )
 
         _mark_rejected = SQLExecuteQueryOperator(
@@ -130,7 +127,6 @@ def respond_reviews():
             conn_id=_DUCKDB_CONN_ID,
             sql="UPDATE trip_reviews SET status = 'rejected' WHERE review_id = $id::INT",
             parameters={"id": _id},
-            max_active_tis_per_dagrun=1,
         )
 
         chain(_save_draft, _review_branch, [_finalize, _mark_rejected])
@@ -140,7 +136,7 @@ def respond_reviews():
         print("Response generation complete for all new reviews")
 
     chain(
-        respond_one_review.expand(review_data=_review_list),
+        respond_one_review(review_data=_review_data),
         response_gen_complete()
     )
 

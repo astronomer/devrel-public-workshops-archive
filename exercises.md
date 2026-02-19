@@ -855,42 +855,45 @@ Both tools connect to DuckDB in read-only mode and get the database path from th
 
 ## Add the query and task group
 
-1. Add tasks to fetch routed reviews that don't have a response yet and prepare them for further usage:
+1. Add tasks to fetch the oldest unprocessed review and prepare it for the agent:
 
     ```python
+    from airflow.exceptions import AirflowSkipException
+
     _reviews = SQLExecuteQueryOperator(
         task_id="get_reviews",
         conn_id=_DUCKDB_CONN_ID,
         sql=(
             "SELECT review_id, booking_id, review_text, sentiment, category, summary "
             "FROM trip_reviews WHERE status = 'routed' AND ai_response IS NULL "
-            "ORDER BY submitted_at ASC"
+            "ORDER BY submitted_at ASC LIMIT 1"
         ),
     )
 
     @task
-    def prepare_review_list(query_result):
+    def prepare_review(query_result):
         if not query_result:
-            return []
-        return [
-            {
-                "review_id": row[0],
-                "booking_id": row[1],
-                "text": row[2],
-                "sentiment": row[3],
-                "category": row[4],
-                "summary": row[5],
-            }
-            for row in query_result
-        ]
+            raise AirflowSkipException("No unprocessed reviews found")
+        row = query_result[0]
+        return {
+            "review_id": row[0],
+            "booking_id": row[1],
+            "text": row[2],
+            "sentiment": row[3],
+            "category": row[4],
+            "summary": row[5],
+        }
 
-    _review_list = prepare_review_list(_reviews.output)
+    _review_data = prepare_review(_reviews.output)
     ```
 
-2. Create the task group for per-review processing, and add a task to prepare the context for the agent inference:
+> [!NOTE]
+> `LIMIT 1` means each Dag run handles exactly one review. Run the Dag again to pick up the next one. If there are no unprocessed reviews left, `AirflowSkipException` gracefully skips all downstream tasks.
+
+2. Create the task group for processing one review, and add a task to prepare the context for the agent:
 
     ```python
-    @task_group(default_args={"max_active_tis_per_dagrun": 4})
+    @task_group
     def respond_one_review(review_data):
 
         @task
@@ -902,9 +905,6 @@ Both tools connect to DuckDB in read-only mode and get the database path from th
                 f"Full review:\n{data['text']}"
             )
     ```
-
-> [!NOTE]
-> With `default_args` on task group level, we can set options that are automatically propagated to all tasks within the task group. This is also possible on Dag level. In this case, we limit the parallelism for each task to 4.
 
 ## Add the agent and save tasks
 
@@ -952,12 +952,8 @@ Both tools connect to DuckDB in read-only mode and get the database path from th
                 "ai_response = $response WHERE review_id = $id::INT"
             ),
             parameters={"id": _id, "response": _response},
-            max_active_tis_per_dagrun=1,
         )
     ```
-
-> [!NOTE]
-> Here, we override the `max_active_tis_per_dagrun` set on task group level for an individual task. In this case, we must avoid parallel access to the DuckDB file.
 
 ## Add the HITL approval step
 
@@ -971,9 +967,9 @@ The `HITLBranchOperator` pauses the workflow and presents the drafted response f
             subject="Review response approval",
             body=(
                 "Please review the AI-drafted response and approve or reject it.\n\n"
-                "**Review ID:** {{ ti.xcom_pull(task_ids='respond_one_review.extract_id', map_indexes=ti.map_index) }}\n\n"
+                "**Review ID:** {{ ti.xcom_pull(task_ids='respond_one_review.extract_id') }}\n\n"
                 "**Drafted response:**\n\n"
-                "{{ ti.xcom_pull(task_ids='respond_one_review.draft_response', map_indexes=ti.map_index) }}"
+                "{{ ti.xcom_pull(task_ids='respond_one_review.draft_response') }}"
             ),
             options=["Approve", "Reject"],
             options_mapping={
@@ -990,7 +986,6 @@ The `HITLBranchOperator` pauses the workflow and presents the drafted response f
                 "approved_at = CURRENT_TIMESTAMP WHERE review_id = $id::INT"
             ),
             parameters={"id": _id},
-            max_active_tis_per_dagrun=1,
         )
 
         _mark_rejected = SQLExecuteQueryOperator(
@@ -998,7 +993,6 @@ The `HITLBranchOperator` pauses the workflow and presents the drafted response f
             conn_id=_DUCKDB_CONN_ID,
             sql="UPDATE trip_reviews SET status = 'rejected' WHERE review_id = $id::INT",
             parameters={"id": _id},
-            max_active_tis_per_dagrun=1,
         )
 
         chain(_save_draft, _review_branch, [_finalize, _mark_rejected])
@@ -1007,7 +1001,7 @@ The `HITLBranchOperator` pauses the workflow and presents the drafted response f
 > [!NOTE]
 > Task IDs inside a task group must use the full prefixed path (e.g., `respond_one_review.finalize`), not just the local name.
 
-2. Add a task to update an asset indicating that the response generation is complete, and expand the task group **outside the task group, within the Dag function**:
+2. Add a completion task and wire everything up **outside the task group, within the Dag function**:
 
     ```python
     @task(outlets=[Asset("responded-reviews")], trigger_rule="none_failed_min_one_success")
@@ -1015,7 +1009,7 @@ The `HITLBranchOperator` pauses the workflow and presents the drafted response f
         print("Response generation complete for all new reviews")
 
     chain(
-        respond_one_review.expand(review_data=_review_list),
+        respond_one_review(review_data=_review_data),
         response_gen_complete()
     )
     ```
@@ -1027,14 +1021,14 @@ The `HITLBranchOperator` pauses the workflow and presents the drafted response f
 
 1. Sync your changes. Re-run the `setup` Dag to reset the database, then trigger `analyze_reviews`.
 2. The full pipeline cascades: analyze → route → embed → respond, all based on asset-aware scheduling.
-3. The `respond_reviews` Dag pauses at the HITL step. It will generate one HITL interaction per review. Navigate to _Browse_ → _Required Actions_.
-4. After a bit, some required actions will appear.
+3. The `respond_reviews` Dag pauses at the HITL step for **one** review. Navigate to _Browse_ → _Required Actions_.
+4. A required action will appear with the AI-drafted response.
 
 ![Required actions list](doc/screenshot-required-actions.png)
 
 ![Human-in-the-loop form](doc/screenshot-hitl-form.png)
 
-5. Select **Approve** or **Reject** for the reviews. As we limited parallelism to 4, you have to wait for new ones to appear after handling some of them. Once all 8 reviews responses are approved or rejected, we are ready to check the final result.
+5. Select **Approve** or **Reject**. Once the Dag completes, trigger `respond_reviews` again manually to process the next review. Repeat a few times. Try approving some and rejecting others to see how the portal reflects different outcomes.
 6. Open the **AstroTrips Support Portal**! Approved reviews show a green status box, rejected reviews show a red one.
 
 ![Final review state](doc/screenshot-final-state.png)
